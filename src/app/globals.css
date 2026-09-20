@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: 'Montserrat', system-ui, sans-serif;
+    --font-body: 'Manrope', system-ui, sans-serif;
+    --header-h: 4.5rem;
+  }
+
+  * {
+    @apply border-white/10;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-petrol-800 font-sans text-paper/80 antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-semibold text-paper;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Vidljiv i dosljedan focus state na svim interaktivnim elementima. */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-solar ring-offset-2 ring-offset-petrol-800;
+    border-radius: 0.5rem;
+  }
+
+  .theme-light :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    @apply ring-offset-paper;
+  }
+
+  ::selection {
+    @apply bg-solar text-petrol-900;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-shell px-5 sm:px-8 lg:px-12;
+  }
+
+  .eyebrow {
+    @apply font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-solar;
+  }
+
+  .eyebrow-muted {
+    @apply font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-paper/45;
+  }
+
+  .lede {
+    @apply max-w-prose text-base leading-relaxed text-paper/70 sm:text-lg;
+  }
+
+  /* Diskretna staklena povrsina - koristi se samo na karticama i panelima. */
+  .glass {
+    @apply border border-white/10 bg-white/[0.035] backdrop-blur-[2px];
+  }
+
+  .hairline {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/15 to-transparent;
+  }
+
+  .tech-grid {
+    @apply bg-grid-fine bg-grid;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Maskirani rub za tehnicke grid teksture. */
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+  }
+
+  .mask-fade-radial {
+    -webkit-mask-image: radial-gradient(ellipse 65% 60% at 50% 40%, black 30%, transparent 100%);
+    mask-image: radial-gradient(ellipse 65% 60% at 50% 40%, black 30%, transparent 100%);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}

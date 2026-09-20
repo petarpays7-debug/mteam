@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#04121B"/>
+      <stop offset="55%" stop-color="#061A26"/>
+      <stop offset="100%" stop-color="#0B1014"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#1f5270"/>
+      <stop offset="100%" stop-color="#0d2534"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.28" r="0.5">
+      <stop offset="0%" stop-color="#F5B900" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#F5B900" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g stroke="#1F3D4E" stroke-width="1" opacity="0.45">
+    <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200M0 400H1200M0 480H1200M0 560H1200"/>
+    <path d="M80 0V630M240 0V630M400 0V630M560 0V630M720 0V630M880 0V630M1040 0V630"/>
+  </g>
+
+  <g transform="translate(700 300)">
+    <g transform="skewY(-14)">
+      <rect x="0" y="0" width="150" height="86" rx="4" fill="url(#panel)" stroke="#F5B900" stroke-opacity="0.25"/>
+      <rect x="166" y="0" width="150" height="86" rx="4" fill="url(#panel)" stroke="#F5B900" stroke-opacity="0.25"/>
+      <rect x="0" y="102" width="150" height="86" rx="4" fill="url(#panel)" stroke="#F5B900" stroke-opacity="0.25"/>
+      <rect x="166" y="102" width="150" height="86" rx="4" fill="url(#panel)" stroke="#F5B900" stroke-opacity="0.25"/>
+    </g>
+  </g>
+
+  <g transform="translate(78 150)">
+    <path d="M0 62 L16 20 L28 48 L40 20 L56 62" fill="none" stroke="#F5B900" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="76" y="54" font-family="Montserrat, Arial, sans-serif" font-size="42" font-weight="700" fill="#F5F8F7">M-Team d.o.o.</text>
+  </g>
+
+  <text x="78" y="330" font-family="Montserrat, Arial, sans-serif" font-size="62" font-weight="700" fill="#F5F8F7">Pretvaramo sunce</text>
+  <text x="78" y="404" font-family="Montserrat, Arial, sans-serif" font-size="62" font-weight="700" fill="#F5B900">u vašu energiju.</text>
+  <text x="78" y="470" font-family="Manrope, Arial, sans-serif" font-size="26" fill="#F5F8F7" fill-opacity="0.62">Energija. Mobilnost. Bez kompromisa.</text>
+
+  <rect x="78" y="516" width="86" height="3" fill="#F5B900"/>
+  <text x="78" y="562" font-family="Manrope, Arial, sans-serif" font-size="22" fill="#F5F8F7" fill-opacity="0.45">Solarne elektrane ključ u ruke · M-CARS · MT Mount</text>
+</svg>
