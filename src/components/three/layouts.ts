@@ -40,8 +40,8 @@ export type InstanceTransform = {
 
 /* Paleta ---------------------------------------------------------------- */
 
-const PANEL_DEEP = new THREE.Color('#1f4f74');
-const PANEL_MID = new THREE.Color('#2f7099');
+const PANEL_DEEP = new THREE.Color('#2c6b96');
+const PANEL_MID = new THREE.Color('#3f8ab5');
 const STEEL = new THREE.Color('#d6e2ea');
 const STEEL_DARK = new THREE.Color('#93a9b7');
 const STEEL_WARM = new THREE.Color('#b4c4cf');
@@ -76,14 +76,23 @@ function emptyTransform(): InstanceTransform {
 
 const COLS = 20;
 const ROWS = 16;
-const GAP_X = 0.52;
-const GAP_Z = 0.42;
-const PANEL_SCALE = 0.46;
+/*
+  Razmaci su tek nesto veci od samog modula. Sa sirim razmakom polje se izmedu
+  dva prelaska sunca raspadalo u niz odvojenih pravokutnika umjesto da izgleda
+  kao jedna suvisla ploha.
+*/
+const GAP_X = 0.5;
+const GAP_Z = 0.33;
+const PANEL_SCALE = 0.47;
 /*
   Pozitivan nagib okrece plohu modula prema promatracu (i prema suncu u sceni).
-  S negativnim nagibom moduli se vide iskosa, pa polje izgleda kao niz crta.
+
+  Vrijednost nije proizvoljna: kamera gleda polje pod oko 23 stupnja, pa pri
+  nagibu 0.55 svaki red zaklanja vise dubine nego sto iznosi razmak do sljedeceg.
+  Redovi se tako vizualno preklapaju i polje izgleda kao jedna ploha. S manjim
+  nagibom izmedu redova se vide praznine i polje se raspada u niz pravokutnika.
 */
-const PANEL_TILT = 0.4;
+const PANEL_TILT = 0.55;
 
 function buildSolarState(): InstanceTransform[] {
   const out: InstanceTransform[] = [];
@@ -96,12 +105,12 @@ function buildSolarState(): InstanceTransform[] {
     // Polje je podijeljeno u tri bloka po dubini, s prolazom izmedu njih —
     // tako izgleda kao stvarna instalacija, a ne kao jednolicna resetka.
     const block = Math.floor(row / 5);
-    const aisle = block * 0.26;
+    const aisle = block * 0.2;
 
     t.position.set(
       (col - (COLS - 1) / 2) * GAP_X,
-      -0.5 + (ROWS - 1 - row) * 0.062,
-      (row - (ROWS - 1) / 2) * GAP_Z + aisle - 0.26,
+      -0.5 + (ROWS - 1 - row) * 0.05,
+      (row - (ROWS - 1) / 2) * GAP_Z + aisle - 0.2,
     );
     t.quaternion.copy(quatFromEuler(PANEL_TILT, 0, 0));
     t.scale.set(PANEL_SCALE, 1, PANEL_SCALE);
@@ -129,14 +138,21 @@ const MOUNT_Y_OFFSET = 0.1;
   se iz iste funkcije `arrayPlaneY`, pa nijedna greda ne moze proviriti kroz
   module - to je ranije bio slucaj jer su stupovi imali fiksnu visinu.
 */
-const MOUNT_TILT = 0.5;
+const MOUNT_TILT = 0.55;
 const MOUNT_SLOPE = Math.tan(MOUNT_TILT);
 /** Visina ravnine modula na osi z = 0. */
 const ARRAY_BASE_Y = 0.35;
 /** Razina tla ispod konstrukcije. */
 const GROUND_Y = -1.7;
-/** Razmak izmedu gornje plohe nosaca i donje plohe modula. */
-const RAIL_CLEARANCE = 0.13;
+/*
+  Razmak izmedu vrha nosaca i ravnine modula.
+
+  Nagnuti modul seze 0.078 ispod svoje ravnine (polovica debljine puta kosinus
+  nagiba, plus polovica dubine puta sinus). Nosac je visok 0.11 i podignut 0.05
+  iznad vrha stupa, pa mu vrh zavrsava na -RAIL_CLEARANCE + 0.105.
+  Uz 0.32 ostaje oko 0.14 zracnosti; s ranijih 0.13 nosac je virio kroz module.
+*/
+const RAIL_CLEARANCE = 0.32;
 
 const RAIL_Z = [-1.45, 1.45];
 const POST_X = [-4.2, -3.0, -1.8, -0.6, 0.6, 1.8, 3.0, 4.2];
