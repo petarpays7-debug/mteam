@@ -1,8 +1,13 @@
+import { photos } from './photos';
+import type { Photo } from './photos';
+
 export type MountCategory = {
   slug: string;
   title: string;
   short: string;
   points: string[];
+  /** Stvarna fotografija tog tipa izvedbe, uz shematski 3D prikaz. */
+  photo: Photo;
 };
 
 export const mountCategories: MountCategory[] = [
@@ -16,6 +21,7 @@ export const mountCategories: MountCategory[] = [
       'Minimalno opterećenje krova',
       'Otpornost na vjetar i snijeg',
     ],
+    photo: photos.kosiKrov,
   },
   {
     slug: 'limeni-krov',
@@ -27,6 +33,7 @@ export const mountCategories: MountCategory[] = [
       'Pogodno za industrijske objekte',
       'Otpornost na koroziju',
     ],
+    photo: photos.limeniKrov,
   },
   {
     slug: 'ravni-krov',
@@ -38,6 +45,7 @@ export const mountCategories: MountCategory[] = [
       'Optimiziran kut nagiba',
       'Fleksibilnost za različite objekte',
     ],
+    photo: photos.ravniKrovMontaza,
   },
   {
     slug: 'ground-mount',
@@ -49,6 +57,7 @@ export const mountCategories: MountCategory[] = [
       'Prilagodba terenu',
       'Dug vijek trajanja',
     ],
+    photo: photos.elektranaIzZraka,
   },
   {
     slug: 'carport',
@@ -60,6 +69,7 @@ export const mountCategories: MountCategory[] = [
       'Mogućnost integracije EV punionica',
       'Moderan dizajn',
     ],
+    photo: photos.carport,
   },
   {
     slug: 'solar-fence',
@@ -72,6 +82,7 @@ export const mountCategories: MountCategory[] = [
       'Mogućnost bifacijalnih panela',
       'Optimalno za istok-zapad orijentaciju',
     ],
+    photo: photos.solarnaOgrada,
   },
 ];
 

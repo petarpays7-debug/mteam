@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
-import { CarHeroVisual } from '@/components/sections/CarHeroVisual';
 import { FinalCta } from '@/components/sections/FinalCta';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { PageHero } from '@/components/ui/PageHero';
+import { Photo } from '@/components/ui/Photo';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHeader } from '@/components/ui/Section';
 import { company } from '@/content/company';
+import { photos } from '@/content/photos';
 import {
   carsPrinciples,
   eligibleGroups,
@@ -34,7 +35,14 @@ export default function CarsPage() {
         tone="cars"
         title="M-CARS"
         lede="Kvaliteta koju vidiš. Sigurnost koju osjetiš."
-        visual={<CarHeroVisual />}
+        visual={
+          <Photo
+            photo={photos.carport}
+            ratio="16 / 10"
+            sizes="(min-width: 1024px) 46vw, 100vw"
+            priority
+          />
+        }
       >
         <div className="flex flex-wrap gap-3">
           <Button href="/kontakt" variant="cars" size="lg" icon="arrow-right">
@@ -67,7 +75,24 @@ export default function CarsPage() {
             </Reveal>
           </div>
 
-          <div className="mt-14 grid gap-5 md:grid-cols-3">
+          <div className="mt-14 grid gap-5 sm:grid-cols-2">
+            <Reveal>
+              <Photo
+                photo={photos.pregledVozila}
+                ratio="3 / 2"
+                sizes="(min-width: 640px) 45vw, 100vw"
+              />
+            </Reveal>
+            <Reveal delay={0.08}>
+              <Photo
+                photo={photos.primopredajaVozila}
+                ratio="3 / 2"
+                sizes="(min-width: 640px) 45vw, 100vw"
+              />
+            </Reveal>
+          </div>
+
+          <div className="mt-5 grid gap-5 md:grid-cols-3">
             {carsPrinciples.map((item, index) => (
               <Reveal
                 key={item.title}

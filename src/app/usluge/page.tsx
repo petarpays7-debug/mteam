@@ -4,9 +4,11 @@ import { ServicesGrid } from '@/components/sections/ServicesGrid';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { PageHero } from '@/components/ui/PageHero';
+import { Photo } from '@/components/ui/Photo';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHeader } from '@/components/ui/Section';
 import { processSteps } from '@/content/home';
+import { photos } from '@/content/photos';
 import { elaborates, hepAuthorisation } from '@/content/services';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 
@@ -41,6 +43,20 @@ export default function ServicesPage() {
             Popis usluga
           </h2>
           <ServicesGrid linkToDetails={false} />
+
+          <div className="mt-14 grid gap-5 sm:grid-cols-3">
+            <Photo photo={photos.montazaDetalj} ratio="4 / 5" sizes="(min-width: 640px) 30vw, 100vw" />
+            <Photo
+              photo={photos.elektranaIzZraka}
+              ratio="4 / 5"
+              sizes="(min-width: 640px) 30vw, 100vw"
+            />
+            <Photo
+              photo={photos.inverterOprema}
+              ratio="4 / 5"
+              sizes="(min-width: 640px) 30vw, 100vw"
+            />
+          </div>
         </div>
       </section>
 

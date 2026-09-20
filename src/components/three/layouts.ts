@@ -121,19 +121,42 @@ function buildSolarState(): InstanceTransform[] {
 const MOUNT_SCALE = 0.86;
 const MOUNT_Y_OFFSET = 0.1;
 
+/*
+  Konstrukcija je modelirana kao stvarni nagnuti stol.
+
+  Ravnina modula pada prema promatracu (+Z), jer su moduli nagnuti licem prema
+  njemu. Zato je straznji red stupova visok, a prednji nizak. Sve visine racunaju
+  se iz iste funkcije `arrayPlaneY`, pa nijedna greda ne moze proviriti kroz
+  module - to je ranije bio slucaj jer su stupovi imali fiksnu visinu.
+*/
+const MOUNT_TILT = 0.5;
+const MOUNT_SLOPE = Math.tan(MOUNT_TILT);
+/** Visina ravnine modula na osi z = 0. */
+const ARRAY_BASE_Y = 0.35;
+/** Razina tla ispod konstrukcije. */
+const GROUND_Y = -1.7;
+/** Razmak izmedu gornje plohe nosaca i donje plohe modula. */
+const RAIL_CLEARANCE = 0.13;
+
+const RAIL_Z = [-1.45, 1.45];
+const POST_X = [-4.2, -3.0, -1.8, -0.6, 0.6, 1.8, 3.0, 4.2];
+
+function arrayPlaneY(z: number): number {
+  return ARRAY_BASE_Y - z * MOUNT_SLOPE;
+}
+
 function buildMountState(): InstanceTransform[] {
   const out: InstanceTransform[] = [];
 
-  const postX = [-4.2, -3.35, -2.5, -1.65, -0.8, 0.05, 0.9, 1.75, 2.6, 3.8];
-  const postZ = [-1.45, 1.45];
+  /* Stupovi — visina svakog slijedi nagib ravnine modula. */
+  for (const z of RAIL_Z) {
+    const top = arrayPlaneY(z) - RAIL_CLEARANCE;
+    const height = top - GROUND_Y;
 
-  // Stupovi — straznji red visi, pa konstrukcija dobiva nagib.
-  for (let z = 0; z < postZ.length; z += 1) {
-    for (let x = 0; x < postX.length; x += 1) {
+    for (const x of POST_X) {
       const t = emptyTransform();
-      const height = postZ[z] < 0 ? 2.35 : 1.35;
-      t.position.set(postX[x], -1.45 + height / 2, postZ[z]);
-      t.scale.set(0.1, height / 0.05, 0.16);
+      t.position.set(x, GROUND_Y + height / 2, z);
+      t.scale.set(0.11, height / 0.05, 0.17);
       t.color.copy(STEEL_DARK);
       t.gloss = 0.45;
       t.metal = 0.82;
@@ -141,67 +164,70 @@ function buildMountState(): InstanceTransform[] {
     }
   }
 
-  // Uzduzni nosaci.
-  const rails: Array<[number, number]> = [
-    [-0.28, -1.45],
-    [-0.92, 1.45],
-    [0.2, -1.45],
-    [-0.44, 1.45],
-    [-1.3, -1.45],
-    [-1.3, 1.45],
-    [-0.04, -0.72],
-    [-0.68, 0.72],
-  ];
-  for (const [y, z] of rails) {
-    const t = emptyTransform();
-    t.position.set(0, y, z);
-    t.scale.set(8.6, 2.2, 0.3);
-    t.color.copy(STEEL);
-    t.gloss = 0.55;
-    t.metal = 0.85;
-    out.push(t);
+  /* Uzduzni nosaci na vrhu stupova. */
+  for (const z of RAIL_Z) {
+    const y = arrayPlaneY(z) - RAIL_CLEARANCE + 0.05;
+    for (const offset of [-0.05, 0.05]) {
+      const t = emptyTransform();
+      t.position.set(0, y, z + offset * 2);
+      t.scale.set(9.4, 2.2, 0.28);
+      t.color.copy(STEEL);
+      t.gloss = 0.55;
+      t.metal = 0.85;
+      out.push(t);
+    }
   }
 
-  // Dijagonale koje zatvaraju resetku.
-  for (let i = 0; i < 16; i += 1) {
+  /* Kose spone koje povezuju prednji i straznji red — prate nagib. */
+  const braceRise = arrayPlaneY(RAIL_Z[0]) - arrayPlaneY(RAIL_Z[1]);
+  const braceSpan = RAIL_Z[1] - RAIL_Z[0];
+  const braceLength = Math.hypot(braceSpan, braceRise);
+  const braceAngle = Math.atan2(braceRise, braceSpan);
+
+  for (let i = 0; i < 8; i += 1) {
     const t = emptyTransform();
-    const side = i % 2 === 0 ? -1 : 1;
-    const slot = Math.floor(i / 2);
-    t.position.set(-3.6 + slot * 1.02, -0.72, side * 1.45);
-    t.quaternion.copy(quatFromEuler(0, 0, side * 0.68));
-    t.scale.set(2.05, 1.5, 0.16);
+    t.position.set(
+      -3.6 + i * 1.03,
+      (arrayPlaneY(RAIL_Z[0]) + arrayPlaneY(RAIL_Z[1])) / 2 - RAIL_CLEARANCE - 0.1,
+      0,
+    );
+    // Rotacija oko Y postavlja gredu po dubini, rotacija oko Z daje nagib.
+    t.quaternion.copy(quatFromEuler(0, Math.PI / 2, braceAngle));
+    t.scale.set(braceLength, 1.9, 0.2);
     t.color.copy(STEEL_WARM);
     t.gloss = 0.4;
     t.metal = 0.8;
     out.push(t);
   }
 
-  // Poprecne spone izmedu redova.
-  for (let i = 0; i < 6; i += 1) {
+  /* Okomiti potpornji izmedu spona i tla. */
+  for (let i = 0; i < 8; i += 1) {
+    const z = i % 2 === 0 ? -0.5 : 0.5;
+    const top = arrayPlaneY(z) - RAIL_CLEARANCE - 0.2;
+    const height = top - GROUND_Y;
     const t = emptyTransform();
-    t.position.set(-3.2 + i * 1.3, -0.6, 0);
-    t.quaternion.copy(quatFromEuler(0.52, Math.PI / 2, 0));
-    t.scale.set(3.1, 1.4, 0.2);
+    t.position.set(-3.1 + Math.floor(i / 2) * 2.05, GROUND_Y + height / 2, z);
+    t.scale.set(0.08, height / 0.05, 0.12);
     t.color.copy(STEEL_DARK);
     t.gloss = 0.4;
     t.metal = 0.8;
     out.push(t);
   }
 
-  // Moduli polozeni na konstrukciju.
+  /* Moduli polozeni na ravninu konstrukcije. */
   const panelCount = INSTANCE_COUNT - out.length;
   const pCols = 22;
+  const pRows = Math.ceil(panelCount / pCols);
+
   for (let i = 0; i < panelCount; i += 1) {
     const col = i % pCols;
     const row = Math.floor(i / pCols);
+    const z = (row - (pRows - 1) / 2) * 0.26;
+
     const t = emptyTransform();
-    t.position.set(
-      (col - (pCols - 1) / 2) * 0.42,
-      0.62 + row * 0.012,
-      (row - 5.5) * 0.34 - 0.1,
-    );
-    t.quaternion.copy(quatFromEuler(0.5, 0, 0));
-    t.scale.set(0.38, 1, 0.32);
+    t.position.set((col - (pCols - 1) / 2) * 0.42, arrayPlaneY(z), z);
+    t.quaternion.copy(quatFromEuler(MOUNT_TILT, 0, 0));
+    t.scale.set(0.38, 1, 0.38);
     t.color.copy(col % 5 === 0 ? PANEL_MID : PANEL_DEEP);
     t.gloss = 0.88;
     t.metal = 0.18;

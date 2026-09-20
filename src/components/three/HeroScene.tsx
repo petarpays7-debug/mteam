@@ -290,6 +290,15 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
 
 /* -------------------------------------------------------------------------- */
 
+/** Trajanje jednog punog obilaska sunca, u sekundama. */
+const SUN_PERIOD = 15;
+const SUN_SPEED = (Math.PI * 2) / SUN_PERIOD;
+/**
+ * Pocetni kut. Sunce krece s desnog ruba polja, pa odbljesak putuje preko
+ * modula od prve sekunde i sredinu prijede oko trece.
+ */
+const SUN_PHASE = 0.2;
+
 /** Pokretno svjetlo koje stvara prelazak sunca preko staklene povrsine modula. */
 function SunSweep({ reduced }: { reduced: boolean }) {
   const lightRef = useRef<THREE.DirectionalLight>(null);
@@ -321,7 +330,12 @@ function SunSweep({ reduced }: { reduced: boolean }) {
   useEffect(() => () => glowTexture?.dispose(), [glowTexture]);
 
   useFrame((state) => {
-    const t = reduced ? 0.7 : state.clock.elapsedTime * 0.14;
+    /*
+      Sunce obide punu putanju svakih SUN_PERIOD sekundi, a pocetni pomak je
+      postavljen tako da odbljesak prijede preko modula vec u prvih par sekundi
+      od ucitavanja - posjetitelj se na herou ne zadrzava dugo.
+    */
+    const t = reduced ? SUN_PHASE + 1.2 : SUN_PHASE + state.clock.elapsedTime * SUN_SPEED;
     const x = Math.cos(t) * 10;
     const y = 6 + Math.sin(t * 0.7) * 1.8;
     const z = Math.sin(t) * 6 + 3;

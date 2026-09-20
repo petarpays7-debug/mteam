@@ -4,6 +4,7 @@ import { Hero } from '@/components/sections/Hero';
 import { ProcessTimeline } from '@/components/sections/ProcessTimeline';
 import { ServicesGrid } from '@/components/sections/ServicesGrid';
 import { TrustSection } from '@/components/sections/TrustSection';
+import { WorkGallery } from '@/components/sections/WorkGallery';
 import { WorldsSection } from '@/components/sections/WorldsSection';
 import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
@@ -24,6 +25,7 @@ export default function HomePage() {
       <Hero />
       <WorldsSection />
       <ProcessTimeline />
+      <WorkGallery />
 
       <section className="relative py-section" aria-labelledby="usluge-naslov">
         <div className="shell">

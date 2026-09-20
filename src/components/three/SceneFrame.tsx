@@ -10,7 +10,6 @@ import { useWebGLSupport } from '@/hooks/useWebGLSupport';
 import type { MountKind } from './MountScene';
 
 const MountScene = dynamic(() => import('./MountScene'), { ssr: false, loading: () => null });
-const CarScene = dynamic(() => import('./CarScene'), { ssr: false, loading: () => null });
 
 type FrameState = {
   reduced: boolean;
@@ -82,33 +81,6 @@ export function MountSceneFrame({
       {show ? (
         <div className="absolute inset-0">
           <MountScene kind={kind} {...state} onContextLost={onContextLost} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-export function CarSceneFrame({
-  fallback,
-  className,
-}: {
-  fallback: ReactNode;
-  className?: string;
-}) {
-  const { ref, show, state, onContextLost } = useSceneGate();
-
-  return (
-    <div ref={ref} className={className}>
-      <div
-        className={`absolute inset-0 transition-opacity duration-700 ease-brand ${
-          show ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        {fallback}
-      </div>
-      {show ? (
-        <div className="absolute inset-0">
-          <CarScene {...state} onContextLost={onContextLost} />
         </div>
       ) : null}
     </div>

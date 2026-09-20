@@ -4,6 +4,7 @@ import { FinalCta } from '@/components/sections/FinalCta';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { PageHero } from '@/components/ui/PageHero';
+import { Photo } from '@/components/ui/Photo';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHeader } from '@/components/ui/Section';
 import {
@@ -15,6 +16,7 @@ import {
   processFull,
 } from '@/content/about';
 import { company } from '@/content/company';
+import { photos } from '@/content/photos';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
@@ -31,6 +33,14 @@ export default function AboutPage() {
         eyebrow="O nama"
         title="Tehnička odgovornost od prve analize do zadnjeg spoja."
         lede={aboutIntro}
+        visual={
+          <Photo
+            photo={photos.ravniKrovMontaza}
+            ratio="4 / 3"
+            sizes="(min-width: 1024px) 46vw, 100vw"
+            priority
+          />
+        }
       >
         <Button href="/usluge" icon="arrow-right">
           Pogledajte usluge
@@ -170,14 +180,20 @@ export default function AboutPage() {
             <div>
               <dt className="eyebrow-muted">Sjedište</dt>
               <dd className="mt-2 text-sm leading-relaxed text-paper/70">
-                {company.address.street}
+                {company.registeredOffice.street}
                 <br />
-                {company.address.postalCode} {company.address.city}
+                {company.registeredOffice.postalCode} {company.registeredOffice.city}
               </dd>
             </div>
             <div>
-              <dt className="eyebrow-muted">{company.vatIdLabel}</dt>
-              <dd className="mt-2 text-sm text-paper/70">{company.vatId}</dd>
+              <dt className="eyebrow-muted">
+                {company.vatIdLabel} / {company.companyNumberLabel}
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-paper/70">
+                {company.vatId}
+                <br />
+                {company.companyNumber}
+              </dd>
             </div>
             <div>
               <dt className="eyebrow-muted">Kontakt</dt>

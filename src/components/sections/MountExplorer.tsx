@@ -6,6 +6,7 @@ import type { KeyboardEvent } from 'react';
 import { MountSceneFrame } from '@/components/three/SceneFrame';
 import type { MountKind } from '@/components/three/MountScene';
 import { Icon } from '@/components/ui/Icon';
+import { Photo } from '@/components/ui/Photo';
 import type { ExtraIconName } from '@/components/ui/Icon';
 import { mountCategories } from '@/content/mount';
 import { cn } from '@/lib/cn';
@@ -147,12 +148,31 @@ export function MountExplorer() {
           fallback={<MountFallback slug={category.slug} />}
         />
 
+        {/* Shematski 3D prikaz gore, stvarna fotografija te izvedbe odmah ispod. */}
+        <div className="mt-5">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`foto-${category.slug}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduced ? 0.12 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Photo
+                photo={category.photo}
+                ratio="16 / 9"
+                sizes="(min-width: 1024px) 50vw, 100vw"
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
         <div
           role="tabpanel"
           id={`${baseId}-panel-${category.slug}`}
           aria-labelledby={`${baseId}-tab-${category.slug}`}
           tabIndex={0}
-          className="mt-6 rounded-card border border-white/10 bg-white/[0.025] p-7"
+          className="mt-5 rounded-card border border-white/10 bg-white/[0.025] p-7"
         >
           <AnimatePresence mode="wait">
             <motion.div

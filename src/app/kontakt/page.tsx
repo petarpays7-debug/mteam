@@ -75,8 +75,14 @@ export default function ContactPage() {
                       <Icon name="document" className="h-5 w-5" />
                     </span>
                     <div>
-                      <dt className="eyebrow-muted">{company.vatIdLabel}</dt>
-                      <dd className="mt-1.5 text-[0.95rem] text-paper/80">{company.vatId}</dd>
+                      <dt className="eyebrow-muted">
+                        {company.vatIdLabel} / {company.companyNumberLabel}
+                      </dt>
+                      <dd className="mt-1.5 text-[0.95rem] leading-relaxed text-paper/80">
+                        {company.vatId}
+                        <br />
+                        {company.companyNumber}
+                      </dd>
                     </div>
                   </div>
                 </dl>

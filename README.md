@@ -106,6 +106,8 @@ tvrde vrijednosti.
 | `src/content/mount.ts`       | Kategorije konstrukcija i prednosti                          |
 | `src/content/home.ts`        | Hero, tri svijeta, koraci procesa, prednosti, povjerenje     |
 | `src/content/about.ts`       | Tekstovi stranice „O nama”                                   |
+| `src/content/photos.ts`      | Fotografije, opisi (alt) i podrijetlo svake slike             |
+| `src/content/legal.ts`       | **Izjava o privatnosti i tekst o kolačićima**                 |
 
 ### Prije objave obavezno provjeriti
 
@@ -113,9 +115,14 @@ tvrde vrijednosti.
    (`H10707184811`). Standardni hrvatski OIB ima 11 znamenki bez slova; ako je
    dostavljena vrijednost tipfeler, ispravite je na tom jednom mjestu.
 2. **`NEXT_PUBLIC_SITE_URL`** — koristi se za canonical URL-ove, sitemap i Open Graph.
-3. **`/privatnost` i `/kolacici`** — trenutačno su sadržajni predlošci koji opisuju
-   samo ono što je tehnički točno za ovu implementaciju. Konačan tekst treba potvrditi
-   odgovorna osoba ili pravni savjetnik.
+3. **Adresa** — sudski registar navodi sjedište `Kralja Tomislava 110, Čepin`, a
+   postojeća stranica i narudžba navode `Osječka 188, 31431 Čepin`. Obje su u
+   `company.ts` (`registeredOffice` i `address`): sjedište se koristi u pravnim
+   tekstovima, a druga adresa u kontaktu. **Potvrditi koja je aktualna.**
+4. **`/privatnost` i `/kolacici`** — tekstovi opisuju točno ono što ova
+   implementacija radi i sastavljeni su prema Općoj uredbi o zaštiti podataka.
+   Prije objave neka ih pregleda odgovorna osoba. Ako se doda analitika ili bilo
+   koji vanjski skript, obavezno dopuniti popis primatelja i uvesti privolu.
 
 ---
 
@@ -157,7 +164,6 @@ Sve je proceduralno — nema vanjskih glTF modela ni HDR datoteka.
 | `three/layouts.ts`                   | Rasporedi 320 instanci za tri stanja hero scene                       |
 | `three/HeroScene.tsx`                | Hero: morph solarno polje → konstrukcija → vozilo                     |
 | `three/MountScene.tsx`               | MT Mount: „exploded view” nosivog sustava po kategoriji               |
-| `three/CarScene.tsx`                 | M-CARS: puna geometrija vozila                                        |
 
 ### Oblik vozila
 
@@ -165,12 +171,11 @@ Sve je proceduralno — nema vanjskih glTF modela ni HDR datoteka.
 krova, visina praga, poluširina) uz glatku interpolaciju i otvore blatobrana.
 Iz te iste površine nastaju dvije stvari:
 
-1. **hero scena** po njoj raspoređuje solarne module — vozilo je doslovno
-   popločano panelima, što zatvara priču „energija → konstrukcija → mobilnost”,
-2. **M-CARS scena** od nje gradi punu mrežu s poklopljenim presjecima, staklima
-   kao zasebnom grupom, kotačima, svjetlima i retrovizorima.
+Hero scena po toj površini raspoređuje solarne module — vozilo je doslovno
+popločano panelima, što zatvara priču „energija → konstrukcija → mobilnost”.
 
-Promjena presjeka u `SECTIONS` mijenja oblik na oba mjesta odjednom.
+Stranica `/mobilnost` **ne koristi 3D model** nego stvarnu fotografiju M-Teamova
+voznog parka. Razlog je u odjeljku „Zašto na M-CARS stranici nema 3D modela”.
 
 ### Materijali unutar jednog instanced mesha
 
@@ -198,22 +203,42 @@ objekta umjesto da se sve pomakne odjednom.
   fade prijelazi.
 - **Bez WebGL-a ili uz gubitak konteksta** — statični SVG fallback
   (`three/SceneFallback.tsx`).
+- **Sunce** obiđe punu putanju svakih 15 sekundi (`SUN_PERIOD`), a početni kut je
+  namješten tako da odbljesak prijeđe preko modula već u prvim sekundama.
 
 Kadar se prilagođava omjeru prikaza, pa scena ostaje u okviru i na uskim
 zaslonima.
 
 ---
 
+## Zašto na M-CARS stranici nema 3D modela
+
+Fotorealističan model automobila koji je istovremeno besplatan, provjerljivo
+slobodan za komercijalnu upotrebu i bez problema sa žigom i pravima na dizajn
+praktički ne postoji. Besplatni CC0 modeli (Kenney, Quaternius) su stilizirani i
+niskopoligonalni, a realistični modeli stvarnih vozila nose rizik žiga.
+
+Zato `/mobilnost` koristi **stvarne fotografije M-Teamova voznog parka** —
+uvjerljivije su od bilo kojeg besplatnog modela i nema licencnog rizika.
+Ako se kasnije nabavi licencirani model, dodaje se kao lijeno učitani glTF.
+
+---
+
 ## Vizualni asseti
 
-`public/icon.svg` i `public/og-default.svg` generirani su kao SVG i dio su repozitorija.
+`public/icon.svg` i `public/og-default.svg` generirani su kao SVG.
 
-Fotografije **nisu** uključene. Uz statički export nema optimizacije slika u
-runtimeu, pa prije produkcije:
+Fotografije u `public/slike/` preuzete su s postojeće stranice m-team.hr i
+unaprijed pretvorene u WebP u dvije širine. Uz statički export nema optimizacije
+u runtimeu, pa `components/ui/Photo.tsx` koristi običan `<img>` sa `srcset`,
+`sizes` i zadanim dimenzijama (bez pomicanja rasporeda).
 
-1. potvrditi vlasništvo i pravo korištenja svake fotografije,
-2. optimizirati ih unaprijed u WebP/AVIF i staviti u `public/`,
-3. referencirati ih izravno (bez `next/image` optimizacije).
+Popis, opisi i podrijetlo svake fotografije su u `src/content/photos.ts`. Polje
+`origin` razlikuje **vlastite** fotografije M-Teamovih izvedbi od **stock**
+materijala koji se već koristi na postojećoj stranici.
+
+**Prije objave:** potvrditi pravo korištenja svake fotografije, posebno onih
+označenih kao `stock`.
 
 Stock materijal (Pexels, Unsplash) nije „bez autorskih prava” — licencu treba
 provjeriti prije objave.

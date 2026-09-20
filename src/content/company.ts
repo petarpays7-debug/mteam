@@ -14,20 +14,48 @@ export const company = {
   heroClaim: 'Pretvaramo sunce u vašu energiju!',
 
   /**
-   * OIB je unesen tocno onako kako je dostavljen od strane narucitelja.
-   * Napomena za odrzavanje: standardni hrvatski OIB je 11 znamenki bez slova.
-   * Ako je dostavljena vrijednost tipfeler, ispravite je ovdje - mijenja se
-   * na svim mjestima u aplikaciji.
+   * OIB prema sudskom registru. Kontrolna znamenka je provjerena
+   * (ISO 7064, MOD 11,10) i ispravna.
+   *
+   * Napomena: ranija vrijednost "H10707184811" bila je tipfeler i pojavljuje se
+   * jos uvijek na staroj web stranici - nije valjan OIB jer sadrzi slovo.
    */
-  vatId: 'H10707184811',
+  vatId: '10707184811',
   vatIdLabel: 'OIB',
 
+  /** Maticni broj subjekta iz registra. */
+  companyNumber: '04705050',
+  companyNumberLabel: 'MB',
+
+  /** Pretezita djelatnost prema NKD klasifikaciji. */
+  activity: {
+    code: '46710',
+    name: 'Trgovina na veliko motornim vozilima',
+  },
+
+  /**
+   * Adresa za kontakt i posjete - onako kako je navedena na postojecoj
+   * stranici i u narudzbi.
+   */
   address: {
     street: 'Osječka 188',
     postalCode: '31431',
     city: 'Čepin',
     country: 'Hrvatska',
     countryCode: 'HR',
+  },
+
+  /**
+   * Sjediste prema sudskom registru. Razlikuje se od adrese za kontakt,
+   * pa se u pravnim tekstovima navodi ovo, a u kontaktu gornja adresa.
+   *
+   * PROVJERITI PRIJE OBJAVE: ako je tvrtka preselila, uskladiti obje adrese.
+   */
+  registeredOffice: {
+    street: 'Kralja Tomislava 110',
+    postalCode: '31431',
+    city: 'Čepin',
+    country: 'Hrvatska',
   },
 
   phone: {
