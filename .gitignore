@@ -1,12 +1,25 @@
+# Ovisnosti
 node_modules/
+
+# Next.js
 .next/
 out/
 build/
+next-env.d.ts
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Cloudflare / Wrangler
+.wrangler/
+.dev.vars
+.dev.vars.*
+
+# Okruzenje i tajne
 .env
 .env*.local
-*.tsbuildinfo
-next-env.d.ts
-.DS_Store
 
-# TypeScript incremental build info
-tsconfig.tsbuildinfo
+# OS
+.DS_Store
+Thumbs.db

@@ -8,10 +8,10 @@
       "port": 3000
     },
     {
-      "name": "mteam-prod",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "start"],
-      "port": 3000
+      "name": "mteam-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["wrangler", "pages", "dev", "--port", "8788"],
+      "port": 8788
     }
   ]
 }

@@ -1,0 +1,15 @@
+# Normalizacija: sve tekstualne datoteke idu u repozitorij s LF zavrsecima.
+# Sprjecava CRLF sum u diffovima pri radu na Windowsu.
+* text=auto eol=lf
+
+# Binarni sadrzaj se ne dira.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ico binary
+*.glb binary
+*.hdr binary

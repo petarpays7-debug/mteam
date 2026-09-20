@@ -1,0 +1,12 @@
+# Konfiguracija za Cloudflare Pages.
+#
+# Cloudflare Pages cita ovu datoteku pri buildu, pa izlazni direktorij ne treba
+# rucno postavljati u dashboardu. Ako je u dashboardu ostala starija vrijednost
+# (npr. "dist"), postavka odavde ima prednost.
+#
+# Build naredba ostaje `npm run build` (Next.js staticki export u `out/`).
+# Dinamicni dio (`/api/kontakt`) automatski se preuzima iz `functions/`.
+
+name = "mteam"
+compatibility_date = "2026-09-18"
+pages_build_output_dir = "out"

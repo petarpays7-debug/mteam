@@ -1,14 +1,36 @@
-import { NextResponse } from 'next/server';
-import { company } from '@/content/company';
-import { contactSchema } from '@/lib/contact-schema';
-import type { ContactFieldErrors, ContactResponse } from '@/lib/contact-schema';
+/**
+ * Cloudflare Pages Function — zaprimanje kontaktnog obrasca.
+ *
+ * Stranica se gradi kao statički export, pa ovo jedino dinamično mjesto ne
+ * živi u Next.js aplikaciji nego kao Pages Function (Workers runtime).
+ * Ruta je i dalje `/api/kontakt`, tako da klijentski kod ostaje nepromijenjen.
+ *
+ * Validacijska shema dijeli se s formom (`src/lib/contact-schema.ts`), pa
+ * klijent i poslužitelj ne mogu razići u pravilima.
+ *
+ * Bez postavljenih environment varijabli funkcija NAMJERNO ne glumi uspješno
+ * slanje — vraća 503, a sučelje korisniku ponudi telefon i e-mail.
+ */
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+import { contactSchema } from '../../src/lib/contact-schema';
+import type { ContactFieldErrors, ContactResponse } from '../../src/lib/contact-schema';
+
+type Env = {
+  RESEND_API_KEY?: string;
+  CONTACT_FROM_EMAIL?: string;
+  CONTACT_TO_EMAIL?: string;
+};
+
+type RequestContext = {
+  request: Request;
+  env: Env;
+};
 
 /* -------------------------------------------------------------------------- */
-/* Jednostavno ogranicenje broja zahtjeva po IP adresi (in-memory).            */
-/* Za vise instanci zamijeniti vanjskim spremistem (npr. Redis, Upstash).      */
+/* Ogranicenje broja zahtjeva po IP adresi.                                    */
+/* Drzi se u memoriji izolata, pa vrijedi samo unutar jednog izolata - dovoljno */
+/* za usporavanje automatiziranih slanja. Za strogu kontrolu koristiti KV ili   */
+/* Durable Object.                                                              */
 /* -------------------------------------------------------------------------- */
 
 const WINDOW_MS = 10 * 60 * 1000;
@@ -21,7 +43,6 @@ function rateLimited(key: string): boolean {
   recent.push(now);
   hits.set(key, recent);
 
-  // Povremeno ciscenje kako mapa ne bi rasla neograniceno.
   if (hits.size > 500) {
     for (const [k, v] of hits) {
       if (v.every((t) => now - t >= WINDOW_MS)) hits.delete(k);
@@ -31,25 +52,30 @@ function rateLimited(key: string): boolean {
   return recent.length > MAX_PER_WINDOW;
 }
 
+function json(body: ContactResponse, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 
 type MailConfig = { apiKey: string; from: string; to: string };
 
-/**
- * Konfiguracija se cita iskljucivo iz environment varijabli.
- * Dok nisu postavljene, ruta namjerno NE glumi uspjesno slanje - vraca 503
- * i korisniku se u sucelju nude telefon i e-mail kao alternativa.
- */
-function readMailConfig(): MailConfig | null {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-  const to = process.env.CONTACT_TO_EMAIL ?? company.email.display;
+function readMailConfig(env: Env): MailConfig | null {
+  const apiKey = env.RESEND_API_KEY;
+  const from = env.CONTACT_FROM_EMAIL;
+  const to = env.CONTACT_TO_EMAIL;
 
   if (!apiKey || !from || !to) return null;
   return { apiKey, from, to };
 }
 
-async function sendViaResend(config: MailConfig, data: { name: string; email: string; message: string }) {
+async function sendViaResend(
+  config: MailConfig,
+  data: { name: string; email: string; message: string },
+): Promise<void> {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -76,20 +102,24 @@ async function sendViaResend(config: MailConfig, data: { name: string; email: st
   }
 }
 
-export async function POST(request: Request): Promise<NextResponse<ContactResponse>> {
+/* -------------------------------------------------------------------------- */
+
+async function handlePost(context: RequestContext): Promise<Response> {
+  const { request, env } = context;
+
   const ip =
+    request.headers.get('CF-Connecting-IP') ??
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    request.headers.get('x-real-ip') ??
     'unknown';
 
   if (rateLimited(ip)) {
-    return NextResponse.json(
+    return json(
       {
         ok: false,
         code: 'rate_limited',
         message: 'Zaprimili smo previše upita s ove adrese. Pokušajte ponovno za nekoliko minuta.',
       },
-      { status: 429 },
+      429,
     );
   }
 
@@ -109,40 +139,49 @@ export async function POST(request: Request): Promise<NextResponse<ContactRespon
         fieldErrors[field as keyof ContactFieldErrors] = issue.message;
       }
     }
-    return NextResponse.json({ ok: false, code: 'validation', fieldErrors }, { status: 400 });
+    return json({ ok: false, code: 'validation', fieldErrors }, 400);
   }
 
   // Skriveno polje popunjeno - tihi prekid, bez povratne informacije posiljatelju.
   if (parsed.data.company) {
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return json({ ok: true }, 200);
   }
 
-  const config = readMailConfig();
+  const config = readMailConfig(env);
   if (!config) {
-    return NextResponse.json(
+    return json(
       {
         ok: false,
         code: 'not_configured',
         message:
           'Slanje poruke putem obrasca trenutačno nije aktivirano. Javite nam se telefonom ili e-mailom.',
       },
-      { status: 503 },
+      503,
     );
   }
 
   try {
     await sendViaResend(config, parsed.data);
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return json({ ok: true }, 200);
   } catch (error) {
     console.error('[kontakt] slanje nije uspjelo:', error);
-    return NextResponse.json(
+    return json(
       {
         ok: false,
         code: 'send_failed',
         message:
           'Poruku trenutačno nije moguće poslati. Pokušajte ponovno ili nas kontaktirajte telefonom.',
       },
-      { status: 502 },
+      502,
     );
   }
+}
+
+/**
+ * Jedinstvena ulazna tocka - izbjegava dvojbu oko prioriteta izmedju
+ * `onRequest` i `onRequest<Metoda>` izvoza.
+ */
+export function onRequest(context: RequestContext): Promise<Response> | Response {
+  if (context.request.method === 'POST') return handlePost(context);
+  return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
 }

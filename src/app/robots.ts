@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { siteUrl } from '@/content/company';
 
+/** Generira se u build vremenu (staticki export). */
+export const dynamic = 'force-static';
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [{ userAgent: '*', allow: '/', disallow: '/api/' }],

@@ -1,0 +1,12 @@
+# Cloudflare Pages cita ovu datoteku nativno.
+# Zamjena za `headers()` iz next.config.mjs, koji se uz `output: export` ne primjenjuje.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# Hashirani Next.js asseti su immutable - smiju se kesirati trajno.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
