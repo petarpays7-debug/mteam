@@ -20,7 +20,7 @@ export function ProcessTimeline() {
   const lineScale = useTransform(progress, (v) => (reduced ? 1 : v));
 
   return (
-    <section className="relative py-section" aria-labelledby="proces-naslov">
+    <section className="aura-solar relative overflow-hidden py-section" aria-labelledby="proces-naslov">
       <div
         aria-hidden
         className="tech-grid pointer-events-none absolute inset-0 opacity-[0.45] mask-fade-b"
@@ -77,7 +77,7 @@ export function ProcessTimeline() {
           ))}
         </ol>
 
-        <div className="mt-20 rounded-card border border-white/10 bg-white/[0.025] p-7 sm:p-10">
+        <div className="card mt-20 p-7 sm:p-10">
           <h3 className="font-display text-display-sm">Što time dobivate</h3>
           <ul className="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             {solarBenefits.map((benefit, index) => (

@@ -143,19 +143,34 @@ export function Hero() {
           transition={{ duration: 0.7, delay: 0.56, ease }}
           className="mt-10 border-t border-white/10 pt-7"
         >
-          <dl className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {heroStats.map((stat) => (
-              <div key={stat.label} className="flex flex-col gap-1">
+          <dl className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
+            {heroStats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.6,
+                  delay: reduced ? 0 : 0.62 + index * 0.08,
+                  ease,
+                }}
+                className="relative flex flex-col gap-1 pl-4"
+              >
+                {/* Okomiti akcent umjesto obicnog razmaka — daje ritam i strukturu. */}
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-1 h-[calc(100%-0.5rem)] w-px bg-gradient-to-b from-solar/70 via-solar/20 to-transparent"
+                />
                 <dt className="eyebrow-muted">{stat.label}</dt>
                 <dd>
-                  <span className="block font-display text-2xl font-bold tracking-tight text-paper sm:text-3xl">
+                  <span className="block font-display text-2xl font-bold tracking-tight text-paper sm:text-[2rem]">
                     {stat.value}
                   </span>
-                  <span className="mt-1 block text-[0.82rem] leading-relaxed text-paper/50">
+                  <span className="mt-1.5 block text-[0.82rem] leading-relaxed text-paper/50">
                     {stat.detail}
                   </span>
                 </dd>
-              </div>
+              </motion.div>
             ))}
           </dl>
           <p className="mt-6 max-w-2xl text-[0.78rem] leading-relaxed text-paper/40">
@@ -163,6 +178,24 @@ export function Hero() {
           </p>
         </motion.div>
       </div>
+
+      {/* Diskretan znak da stranica ide dalje — bez teksta, bez pomicanja stranice. */}
+      <motion.span
+        aria-hidden
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1.1 }}
+        className="pointer-events-none absolute bottom-5 left-1/2 hidden -translate-x-1/2 lg:block"
+      >
+        <span className="flex h-11 w-6 items-start justify-center rounded-full border border-white/20 p-1.5">
+          <span
+            className={cn(
+              'h-2 w-1 rounded-full bg-solar/80',
+              !reduced && 'motion-safe:animate-[fade-up_1.8s_ease-in-out_infinite]',
+            )}
+          />
+        </span>
+      </motion.span>
     </section>
   );
 }

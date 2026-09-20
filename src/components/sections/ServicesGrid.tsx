@@ -40,7 +40,7 @@ export function ServicesGrid({ linkToDetails = true }: { linkToDetails?: boolean
         );
 
         const cardClass =
-          'relative flex h-full flex-col overflow-hidden rounded-card border border-white/10 bg-white/[0.025] p-6 transition-colors duration-500 ease-brand group-hover:border-solar/35 group-focus-within:border-solar/35 sm:p-7';
+          'card card-solar corner-marks flex h-full flex-col p-6 text-paper/70 sm:p-7';
 
         return (
           <Reveal key={service.slug} delay={index * 0.06} className="h-full">

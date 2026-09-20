@@ -12,19 +12,19 @@ import { cn } from '@/lib/cn';
 const accent = {
   solar: {
     glow: 'solar' as const,
-    ring: 'group-hover:border-solar/45 group-focus-within:border-solar/45',
+    ring: 'card-solar',
     text: 'text-solar',
     bar: 'bg-solar',
   },
   cars: {
     glow: 'cars' as const,
-    ring: 'group-hover:border-cars-soft/50 group-focus-within:border-cars-soft/50',
+    ring: 'card-cars',
     text: 'text-cars-soft',
     bar: 'bg-cars',
   },
   mount: {
     glow: 'cool' as const,
-    ring: 'group-hover:border-petrol-200/50 group-focus-within:border-petrol-200/50',
+    ring: 'card-solar',
     text: 'text-petrol-100',
     bar: 'bg-petrol-200',
   },
@@ -39,13 +39,13 @@ function WorldCard({ world, index }: { world: World; index: number }) {
         <Link
           href={world.href}
           className={cn(
-            'relative flex h-full flex-col overflow-hidden rounded-card border border-white/10 bg-white/[0.025] p-7 transition-colors duration-500 ease-brand sm:p-8',
+            'card corner-marks flex h-full flex-col p-7 text-paper/70 sm:p-8',
             tone.ring,
           )}
         >
           <div
             aria-hidden
-            className="tech-grid pointer-events-none absolute inset-0 bg-grid-sm opacity-[0.5] mask-fade-b"
+            className="tech-grid pointer-events-none absolute inset-0 bg-grid-sm opacity-[0.45] mask-fade-b"
           />
 
           <div className="relative flex items-center justify-between">
@@ -94,7 +94,7 @@ function WorldCard({ world, index }: { world: World; index: number }) {
 
 export function WorldsSection() {
   return (
-    <section className="relative py-section" aria-labelledby="svjetovi-naslov">
+    <section className="aura-cool relative overflow-hidden py-section" aria-labelledby="svjetovi-naslov">
       <div className="shell">
         <SectionHeader
           eyebrow="Tri poslovna svijeta"

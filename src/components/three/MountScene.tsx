@@ -242,7 +242,7 @@ export default function MountScene({
       frameloop={active ? 'always' : 'never'}
       dpr={simplified ? [1, 1.4] : [1, 1.75]}
       gl={{ antialias: !simplified, alpha: true, powerPreference: 'high-performance' }}
-      camera={{ position: [2.7, 1.75, 3.5], fov: 36 }}
+      camera={{ position: [3.25, 2.05, 4.2], fov: 36 }}
       onCreated={({ gl }) => {
         if (onContextLost) gl.domElement.addEventListener('webglcontextlost', onContextLost);
       }}

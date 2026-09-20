@@ -26,7 +26,7 @@ export function PageHero({
   tone = 'solar',
 }: PageHeroProps) {
   return (
-    <section className="relative overflow-hidden pb-[clamp(3rem,6vw,5rem)] pt-[calc(var(--header-h)+3.5rem)]">
+    <section className="grain relative overflow-hidden pb-[clamp(3rem,6vw,5rem)] pt-[calc(var(--header-h)+3.5rem)]">
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: tones[tone] }} />
       <div
         aria-hidden

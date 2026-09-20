@@ -151,24 +151,56 @@ na poslužitelju.
 
 Sve je proceduralno — nema vanjskih glTF modela ni HDR datoteka.
 
-| Komponenta                            | Opis                                                            |
-| ------------------------------------- | --------------------------------------------------------------- |
-| `three/HeroScene.tsx` + `layouts.ts`  | 96 instanci prelazi između solarnog polja, konstrukcije i vozila |
-| `three/MountScene.tsx`                | „Exploded view” nosivog sustava po kategoriji                    |
-| `three/CarScene.tsx`                  | Ekstrudirana silueta vozila (apstraktna, bez konkretnog modela)  |
+| Datoteka                             | Uloga                                                                |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| `three/carShape.ts`                  | Parametarski oblik karoserije — **jedini izvor istine za vozilo**     |
+| `three/layouts.ts`                   | Rasporedi 320 instanci za tri stanja hero scene                       |
+| `three/HeroScene.tsx`                | Hero: morph solarno polje → konstrukcija → vozilo                     |
+| `three/MountScene.tsx`               | MT Mount: „exploded view” nosivog sustava po kategoriji               |
+| `three/CarScene.tsx`                 | M-CARS: puna geometrija vozila                                        |
 
-Pravila izvedbe, primijenjena u svim scenama:
+### Oblik vozila
+
+`carShape.ts` opisuje karoseriju nizom poprečnih presjeka po dužini (visina
+krova, visina praga, poluširina) uz glatku interpolaciju i otvore blatobrana.
+Iz te iste površine nastaju dvije stvari:
+
+1. **hero scena** po njoj raspoređuje solarne module — vozilo je doslovno
+   popločano panelima, što zatvara priču „energija → konstrukcija → mobilnost”,
+2. **M-CARS scena** od nje gradi punu mrežu s poklopljenim presjecima, staklima
+   kao zasebnom grupom, kotačima, svjetlima i retrovizorima.
+
+Promjena presjeka u `SECTIONS` mijenja oblik na oba mjesta odjednom.
+
+### Materijali unutar jednog instanced mesha
+
+Hero scena crta svih 320 instanci jednim pozivom. Da bi staklo modula, brušeni
+čelik, lak karoserije, guma i svjetla ipak izgledali različito, tri atributa po
+instanci (`aGloss`, `aMetal`, `aGlow`) ubacuju se u standardni PBR shader preko
+`onBeforeCompile`. `aGlow` pogoni emisiju koju zatim hvata bloom.
+
+### Morph prijelaz
+
+Svaka instanca kreće s malim kašnjenjem ovisnim o položaju, opisuje luk i
+zavrti se oko vlastite osi dok putuje. Preobrazba se tako prelijeva preko
+objekta umjesto da se sve pomakne odjednom.
+
+### Pravila izvedbe
 
 - **Lazy load** — `next/dynamic` uz `ssr: false`, montira se tek kad scena uđe u
   vidno polje, pa WebGL ne blokira LCP.
-- **Pauza** — render petlja staje (`frameloop="never"`) kad kartica nije aktivna ili
-  je scena izvan pogleda.
-- **Slabiji uređaji** — manji `dpr`, bez antialiasa i bez `clearcoat` materijala.
-- **`prefers-reduced-motion`** — hero prelazi na `frameloop="demand"`, bez lebdenja,
-  parallaxa i pomicanja kamere; DOM animacije postaju kratki fade prijelazi.
-- **Bez WebGL-a** — prikazuje se statični SVG fallback (`three/SceneFallback.tsx`).
+- **Pauza** — render petlja staje (`frameloop="never"`) kad kartica nije aktivna
+  ili je scena izvan pogleda.
+- **Slabiji uređaji** — manji `dpr`, bez antialiasa, bez `clearcoat` materijala,
+  bez kontaktnih sjena i bez postprocesiranja.
+- **`prefers-reduced-motion`** — hero prelazi na `frameloop="demand"`, bez
+  lebdenja, parallaxa, luka i pomicanja kamere; DOM animacije postaju kratki
+  fade prijelazi.
+- **Bez WebGL-a ili uz gubitak konteksta** — statični SVG fallback
+  (`three/SceneFallback.tsx`).
 
-Kadar se prilagođava omjeru prikaza, pa scena ostaje u okviru i na uskim zaslonima.
+Kadar se prilagođava omjeru prikaza, pa scena ostaje u okviru i na uskim
+zaslonima.
 
 ---
 

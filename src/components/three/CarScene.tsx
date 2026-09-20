@@ -1,135 +1,204 @@
 'use client';
 
-import { Environment, Lightformer } from '@react-three/drei';
+import { ContactShadows, Environment, Lightformer } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import {
+  AXLES,
+  buildCarBodyGeometry,
+  carPoint,
+  WHEEL_INSET,
+  WHEEL_RADIUS,
+  WHEEL_WIDTH,
+} from './carShape';
 
 /**
- * Apstraktna, ekstrudirana silueta vozila.
+ * M-CARS scena — vozilo izgradeno iz iste parametarske karoserije koju hero
+ * scena poplocava modulima.
  *
- * Namjerno ne prikazuje konkretan model niti marku - sluzi kao materijalni
- * dojam (tamni metal, crveni rub) uz M-CARS sadrzaj. Bez automatske rotacije:
- * pokret ovisi iskljucivo o pokazivacu, i to prigusen.
+ * Namjerno ne prikazuje konkretan model niti marku: to je generican, uredan
+ * oblik limuzine. Bez automatske rotacije — pokret ovisi iskljucivo o
+ * pokazivacu, i to prigusen.
  */
+
+/** Vozilo stoji na tlu; scena ga spusta da bude u sredini kadra. */
+const GROUND_OFFSET = -0.86;
 
 /**
- * Bocni profil. Prag izmedju osovina namjerno je visi od branika kako bi
- * kotaci ostali vidljivi ispod karoserije.
+ * Svjetla i detalji citaju polozaj s iste parametarske povrsine kao karoserija,
+ * pa uvijek sjede na limu umjesto da vise u zraku.
  */
-const PROFILE: Array<[number, number]> = [
-  [-3.12, 0.58],
-  [-3.24, 0.98],
-  [-2.86, 1.18],
-  [-1.78, 1.32],
-  [-1.14, 1.76],
-  [0.14, 1.98],
-  [1.26, 1.9],
-  [2.26, 1.38],
-  [3.0, 1.16],
-  [3.24, 0.92],
-  [3.12, 0.56],
-  [2.4, 0.74],
-  [1.4, 0.84],
-  [-1.4, 0.84],
-  [-2.4, 0.74],
-];
-
-/** Dubina ekstruzije (sirina vozila). */
-const BODY_DEPTH = 2.4;
-/** Vertikalno centriranje: profil je definiran iznad nule, scena ga spusta. */
-const GROUND_OFFSET = -1.0;
-
-function buildBodyGeometry() {
-  const shape = new THREE.Shape();
-  const curve = new THREE.CatmullRomCurve3(
-    PROFILE.map(([x, y]) => new THREE.Vector3(x, y, 0)),
-    true,
-    'catmullrom',
-    0.4,
-  );
-  const points = curve.getSpacedPoints(120);
-  shape.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i += 1) shape.lineTo(points[i].x, points[i].y);
-  shape.closePath();
-
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: BODY_DEPTH,
-    bevelEnabled: true,
-    bevelSize: 0.16,
-    bevelThickness: 0.16,
-    bevelSegments: 4,
-    curveSegments: 12,
-  });
-  // Centriramo samo po dubini - X i Y ostaju u koordinatama profila,
-  // pa se kotaci mogu postaviti tocno na pozicije iz siluete.
-  geometry.translate(0, 0, -BODY_DEPTH / 2);
-  geometry.computeVertexNormals();
-  return geometry;
+function onBody(u: number, v: number, outward = 0.02): [number, number, number] {
+  const p = carPoint(u, v, new THREE.Vector3());
+  const scale = 1 + outward;
+  return [p.x * scale, p.y, p.z * scale];
 }
 
-function Wheel({ x, material }: { x: number; material: THREE.Material }) {
+function Wheel({
+  x,
+  z,
+  tyre,
+  rim,
+}: {
+  x: number;
+  z: number;
+  tyre: THREE.Material;
+  rim: THREE.Material;
+}) {
+  const outward = z > 0 ? 1 : -1;
+
   return (
-    <mesh position={[x, 0.62, 0]} rotation={[Math.PI / 2, 0, 0]} material={material}>
-      <cylinderGeometry args={[0.62, 0.62, BODY_DEPTH - 0.12, 30]} />
-    </mesh>
+    <group position={[x, WHEEL_RADIUS, z]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Guma */}
+      <mesh material={tyre} castShadow>
+        <cylinderGeometry args={[WHEEL_RADIUS, WHEEL_RADIUS, WHEEL_WIDTH, 36]} />
+      </mesh>
+      {/* Naplatak, blago uvucen u odnosu na vanjski rub gume */}
+      <mesh position={[0, outward * (WHEEL_WIDTH / 2 - 0.02), 0]} material={rim}>
+        <cylinderGeometry args={[WHEEL_RADIUS * 0.62, WHEEL_RADIUS * 0.62, 0.05, 28]} />
+      </mesh>
+      {/* Krakovi naplatka */}
+      {Array.from({ length: 5 }, (_, i) => (
+        <mesh
+          key={i}
+          position={[0, outward * (WHEEL_WIDTH / 2 - 0.03), 0]}
+          rotation={[0, 0, (i / 5) * Math.PI * 2]}
+          material={rim}
+        >
+          <boxGeometry args={[WHEEL_RADIUS * 0.86, 0.04, 0.07]} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
-function Body({ reduced }: { reduced: boolean }) {
+function Car({ reduced }: { reduced: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
-  const geometry = useMemo(() => buildBodyGeometry(), []);
+  const geometry = useMemo(() => buildCarBodyGeometry(), []);
 
-  const materials = useMemo(
-    () => ({
-      body: new THREE.MeshPhysicalMaterial({
-        color: '#20262c',
-        metalness: 0.85,
-        roughness: 0.17,
-        clearcoat: 1,
-        clearcoatRoughness: 0.12,
-        envMapIntensity: 1.4,
-      }),
-      tyre: new THREE.MeshStandardMaterial({ color: '#0c0f11', metalness: 0.1, roughness: 0.9 }),
-    }),
-    [],
-  );
+  const materials = useMemo(() => {
+    const paint = new THREE.MeshPhysicalMaterial({
+      color: '#4c5a66',
+      metalness: 0.45,
+      roughness: 0.3,
+      clearcoat: 1,
+      clearcoatRoughness: 0.08,
+      envMapIntensity: 2.4,
+      /*
+        Obostrano crtanje: poklopci presjeka su lepeze cija orijentacija ovisi
+        o obliku, pa ovako nema tamnih rupa ni pod jednim kutom gledanja.
+      */
+      side: THREE.DoubleSide,
+    });
+    /* Bez `transmission` — jeftinije je i na tamnoj sceni izgleda uvjerljivije. */
+    const glass = new THREE.MeshPhysicalMaterial({
+      color: '#131c24',
+      metalness: 0.2,
+      roughness: 0.06,
+      clearcoat: 1,
+      clearcoatRoughness: 0.03,
+      envMapIntensity: 2.6,
+    });
+    const tyre = new THREE.MeshStandardMaterial({
+      color: '#262b30',
+      metalness: 0.05,
+      roughness: 0.85,
+    });
+    const rim = new THREE.MeshStandardMaterial({
+      color: '#cdd7de',
+      metalness: 0.9,
+      roughness: 0.25,
+      envMapIntensity: 2.2,
+    });
+    const lampFront = new THREE.MeshStandardMaterial({
+      color: '#fff1d2',
+      emissive: new THREE.Color('#ffe3a8'),
+      emissiveIntensity: 2.4,
+      toneMapped: false,
+    });
+    const lampRear = new THREE.MeshStandardMaterial({
+      color: '#c90000',
+      emissive: new THREE.Color('#ff2020'),
+      emissiveIntensity: 2.2,
+      toneMapped: false,
+    });
+
+    return { paint, glass, tyre, rim, lampFront, lampRear };
+  }, []);
 
   useEffect(() => {
+    const list = Object.values(materials);
     return () => {
       geometry.dispose();
-      materials.body.dispose();
-      materials.tyre.dispose();
+      for (const m of list) m.dispose();
     };
   }, [geometry, materials]);
 
   useFrame((state, delta) => {
     const group = groupRef.current;
     if (!group) return;
-    const dt = Math.min(delta, 0.05);
+
     if (reduced) {
-      group.rotation.y = -0.42;
-      group.rotation.x = 0.06;
+      group.rotation.y = -0.62;
+      group.rotation.x = 0.03;
       return;
     }
+
+    const dt = Math.min(delta, 0.05);
     group.rotation.y = THREE.MathUtils.damp(
       group.rotation.y,
-      -0.42 + state.pointer.x * 0.22,
+      -0.62 + state.pointer.x * 0.26,
       2.2,
       dt,
     );
-    group.rotation.x = THREE.MathUtils.damp(group.rotation.x, 0.06 - state.pointer.y * 0.06, 2.2, dt);
+    group.rotation.x = THREE.MathUtils.damp(
+      group.rotation.x,
+      0.03 - state.pointer.y * 0.07,
+      2.2,
+      dt,
+    );
   });
 
   return (
-    <group ref={groupRef}>
-      <group position={[0, GROUND_OFFSET, 0]}>
-        <mesh geometry={geometry} material={materials.body} />
-        <Wheel x={-1.86} material={materials.tyre} />
-        <Wheel x={1.86} material={materials.tyre} />
-      </group>
+    <group ref={groupRef} position={[0, GROUND_OFFSET, 0]}>
+      <mesh geometry={geometry} material={[materials.paint, materials.glass]} castShadow />
+
+      {[-WHEEL_INSET, WHEEL_INSET].map((z) =>
+        AXLES.map((x) => (
+          <Wheel key={`${x}-${z}`} x={x} z={z} tyre={materials.tyre} rim={materials.rim} />
+        )),
+      )}
+
+      {/* Prednja svjetla */}
+      {[-0.5, 0.5].map((v) => (
+        <mesh key={`f${v}`} position={onBody(0.035, v)} material={materials.lampFront}>
+          <boxGeometry args={[0.1, 0.1, 0.34]} />
+        </mesh>
+      ))}
+
+      {/* Straznja svjetla */}
+      {[-0.5, 0.5].map((v) => (
+        <mesh key={`r${v}`} position={onBody(0.965, v)} material={materials.lampRear}>
+          <boxGeometry args={[0.09, 0.09, 0.36]} />
+        </mesh>
+      ))}
+
+      {/* Bocni retrovizori */}
+      {[-0.86, 0.86].map((v) => (
+        <mesh key={`m${v}`} position={onBody(0.315, v, 0.16)} material={materials.paint}>
+          <boxGeometry args={[0.2, 0.09, 0.16]} />
+        </mesh>
+      ))}
     </group>
   );
+}
+
+/** Drzi vozilo u sredini kadra bez obzira na omjer spremnika. */
+function CameraLook() {
+  useFrame((state) => state.camera.lookAt(0, -0.05, 0));
+  return null;
 }
 
 export default function CarScene({
@@ -148,27 +217,78 @@ export default function CarScene({
       frameloop={active ? 'always' : 'never'}
       dpr={simplified ? [1, 1.4] : [1, 1.75]}
       gl={{ antialias: !simplified, alpha: true, powerPreference: 'high-performance' }}
-      camera={{ position: [1.4, 1.5, 12.6], fov: 30 }}
+      camera={{ position: [6.2, 2.7, 9.6], fov: 30 }}
       onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.1;
         if (onContextLost) gl.domElement.addEventListener('webglcontextlost', onContextLost);
       }}
       aria-hidden
       style={{ pointerEvents: 'none' }}
     >
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[5, 6, 5]} intensity={2.2} color="#F5F8F7" />
-      <directionalLight position={[-3, 5, 6]} intensity={1.1} color="#93AEBF" />
-      {/* Crveni rub - akcent branda, bez agresivnog neona. */}
-      <pointLight position={[-5, 1.5, 2.5]} intensity={40} color="#C90000" distance={16} />
-      <pointLight position={[4, 2.5, -3]} intensity={26} color="#93AEBF" distance={16} />
+      <ambientLight intensity={1.05} />
+      <directionalLight position={[6, 8, 6]} intensity={3.2} color="#F5F8F7" />
+      <directionalLight position={[-4, 5, 7]} intensity={1.2} color="#93AEBF" />
+      {/* Crveni rub — akcent branda, bez agresivnog neona. */}
+      <pointLight position={[-6, 1.6, 2]} intensity={34} color="#C90000" distance={16} />
+      <pointLight position={[5, 2.4, -4]} intensity={28} color="#3A5C70" distance={18} />
 
-      <Body reduced={reduced} />
+      <Car reduced={reduced} />
+      <CameraLook />
 
-      <Environment resolution={96} frames={1}>
-        <Lightformer form="rect" intensity={3.4} color="#F5F8F7" position={[0, 6, 2]} scale={[12, 3, 1]} rotation={[-Math.PI / 2, 0, 0]} />
-        <Lightformer form="rect" intensity={1.6} color="#C90000" position={[-6, 1, 3]} scale={[5, 3, 1]} rotation={[0, 1.1, 0]} />
-        <Lightformer form="rect" intensity={1.2} color="#3A5C70" position={[6, 2, -2]} scale={[5, 4, 1]} rotation={[0, -1.1, 0]} />
+      {!simplified ? (
+        <ContactShadows
+          position={[0, GROUND_OFFSET + 0.002, 0]}
+          scale={14}
+          far={3}
+          blur={2.4}
+          opacity={0.7}
+          color="#000000"
+          resolution={256}
+        />
+      ) : null}
+
+      <Environment resolution={simplified ? 64 : 160} frames={1}>
+        {/* Duga traka iznad vozila — daje karakteristican odsjaj po karoseriji. */}
+        <Lightformer
+          form="rect"
+          intensity={6}
+          color="#F5F8F7"
+          position={[0, 7, 1]}
+          scale={[18, 3.4, 1]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={1.8}
+          color="#C90000"
+          position={[-7, 1.5, 3]}
+          scale={[6, 4, 1]}
+          rotation={[0, 1.1, 0]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={2.4}
+          color="#7FA3BA"
+          position={[7, 2.5, -2]}
+          scale={[6, 5, 1]}
+          rotation={[0, -1.1, 0]}
+        />
+        <Lightformer
+          form="circle"
+          intensity={1.2}
+          color="#FFD65C"
+          position={[2, 4, 6]}
+          scale={[4, 4, 1]}
+        />
       </Environment>
+
+      {!simplified && !reduced ? (
+        <EffectComposer enableNormalPass={false}>
+          <Bloom intensity={0.7} luminanceThreshold={0.7} luminanceSmoothing={0.3} mipmapBlur />
+          <Vignette offset={0.3} darkness={0.6} eskil={false} />
+        </EffectComposer>
+      ) : null}
     </Canvas>
   );
 }

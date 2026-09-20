@@ -66,6 +66,7 @@ export function HeroCanvas({ world }: { world: WorldId }) {
 
   const showScene = sceneReady && webgl === 'supported' && !contextLost;
 
+
   return (
     /*
       Na uskim zaslonima hero je visok zbog sadrzaja, pa scena zauzima samo
@@ -100,7 +101,7 @@ export function HeroCanvas({ world }: { world: WorldId }) {
       */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(4,18,27,0.34)_0%,rgba(4,18,27,0.05)_26%,rgba(6,26,38,0.45)_62%,rgba(6,26,38,0.92)_88%,#061A26_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(4,18,27,0.5)_0%,rgba(4,18,27,0.2)_16%,rgba(4,18,27,0.42)_44%,rgba(6,26,38,0.72)_68%,rgba(6,26,38,0.94)_88%,#061A26_100%)]"
       />
       <div
         aria-hidden

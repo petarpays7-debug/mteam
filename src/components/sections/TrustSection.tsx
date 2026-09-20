@@ -9,7 +9,10 @@ import { trustPoints } from '@/content/home';
  */
 export function TrustSection() {
   return (
-    <section className="relative border-y border-white/10 bg-ink py-section" aria-labelledby="povjerenje-naslov">
+    <section
+      className="grain relative overflow-hidden border-y border-white/10 bg-ink py-section"
+      aria-labelledby="povjerenje-naslov"
+    >
       <div className="shell">
         <SectionHeader
           eyebrow="Povjerenje"
