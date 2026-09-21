@@ -15,6 +15,7 @@ export const mainNav: NavItem[] = [
 ];
 
 export const legalNav: NavItem[] = [
+  { label: 'Podaci o tvrtki', href: '/podaci-o-tvrtki' },
   { label: 'Privatnost', href: '/privatnost' },
   { label: 'Kolačići', href: '/kolacici' },
 ];

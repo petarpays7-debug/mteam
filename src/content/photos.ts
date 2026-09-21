@@ -18,8 +18,11 @@ export type Photo = {
   /** Uža inačica za kartice i uske stupce. */
   small: string;
   alt: string;
+  /** Stvarna širina izvozne datoteke — ne izvorne fotografije. */
   width: number;
   height: number;
+  /** Stvarna širina uže inačice; ide u `srcset` kao `w` deskriptor. */
+  smallWidth: number;
   origin: 'vlastita' | 'stock';
 };
 
@@ -28,8 +31,9 @@ export const photos = {
     src: '/slike/elektrana-iz-zraka.webp',
     small: '/slike/elektrana-iz-zraka-900.webp',
     alt: 'Solarna elektrana na zemlji snimljena iz zraka — tri duga reda fotonaponskih modula uz poljski put.',
-    width: 1919,
-    height: 1083,
+    width: 1600,
+    height: 903,
+    smallWidth: 900,
     origin: 'vlastita',
   },
   kosiKrov: {
@@ -38,14 +42,16 @@ export const photos = {
     alt: 'Fotonaponski moduli postavljeni na kosi krov pokriven crijepom, uz dimnjak.',
     width: 1440,
     height: 816,
+    smallWidth: 900,
     origin: 'vlastita',
   },
   ravniKrovMontaza: {
     src: '/slike/ravni-krov-montaza.webp',
     small: '/slike/ravni-krov-montaza-900.webp',
     alt: 'Dvojica montera postavljaju module na balastnu konstrukciju na ravnom krovu.',
-    width: 1920,
-    height: 1440,
+    width: 1600,
+    height: 1200,
+    smallWidth: 900,
     origin: 'vlastita',
   },
   limeniKrov: {
@@ -54,6 +60,7 @@ export const photos = {
     alt: 'Dovršeno polje fotonaponskih modula na limenom krovu poslovne zgrade.',
     width: 1200,
     height: 1600,
+    smallWidth: 900,
     origin: 'vlastita',
   },
   carport: {
@@ -62,46 +69,52 @@ export const photos = {
     alt: 'Solarni carport iz zraka — niz vozila M-CARS parkiran pod aluminijskom konstrukcijom s modulima.',
     width: 1600,
     height: 900,
+    smallWidth: 1000,
     origin: 'vlastita',
   },
   solarnaOgrada: {
     src: '/slike/solarna-ograda.webp',
     small: '/slike/solarna-ograda-800.webp',
     alt: 'Prikaz sustava solarne ograde s okomito postavljenim bifacijalnim modulima.',
-    width: 1900,
-    height: 499,
+    width: 1400,
+    height: 368,
+    smallWidth: 800,
     origin: 'vlastita',
   },
   pregledVozila: {
     src: '/slike/pregled-vozila.webp',
     small: '/slike/pregled-vozila-800.webp',
     alt: 'Serviser s podignutim poklopcem motora upisuje nalaz pregleda vozila.',
-    width: 1920,
-    height: 1079,
+    width: 1400,
+    height: 787,
+    smallWidth: 800,
     origin: 'stock',
   },
   primopredajaVozila: {
     src: '/slike/primopredaja-vozila.webp',
     small: '/slike/primopredaja-vozila-800.webp',
     alt: 'Prodajni savjetnik i kupac rukuju se pri primopredaji ključeva vozila u salonu.',
-    width: 1919,
-    height: 1279,
+    width: 1400,
+    height: 933,
+    smallWidth: 800,
     origin: 'stock',
   },
   inverterOprema: {
     src: '/slike/inverter-oprema.webp',
     small: '/slike/inverter-oprema-800.webp',
     alt: 'Inverter i razvodna oprema fotonaponskog sustava montirani na zid.',
-    width: 1920,
-    height: 1440,
+    width: 1400,
+    height: 1050,
+    smallWidth: 800,
     origin: 'stock',
   },
   montazaDetalj: {
     src: '/slike/montaza-detalj.webp',
     small: '/slike/montaza-detalj-800.webp',
     alt: 'Detalj montaže fotonaponskog modula na nosivu konstrukciju.',
-    width: 1920,
-    height: 1440,
+    width: 1400,
+    height: 1050,
+    smallWidth: 800,
     origin: 'stock',
   },
 } satisfies Record<string, Photo>;

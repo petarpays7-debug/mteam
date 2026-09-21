@@ -97,6 +97,52 @@ export function organizationJsonLd() {
   };
 }
 
+/**
+ * Podaci o samoj web stranici.
+ *
+ * Povezuje naziv stranice s domenom i s izdavacem, pa trazilica lakse spoji
+ * rezultate iste domene. `SearchAction` se namjerno ne navodi — stranica nema
+ * vlastitu trazilicu, a lazno deklariranje vodi do odbacivanja oznacavanja.
+ */
+export function websiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${siteUrl}/#stranica`,
+    url: siteUrl,
+    name: company.legalName,
+    alternateName: company.shortName,
+    inLanguage: 'hr-HR',
+    publisher: { '@id': `${siteUrl}/#organizacija` },
+  };
+}
+
+/**
+ * Kontaktna stranica s tockom kontakta.
+ *
+ * Navode se samo telefon i e-mail koji stvarno postoje u `company.ts`;
+ * radno vrijeme se ne navodi jer nije potvrdeno.
+ */
+export function contactPageJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    '@id': `${siteUrl}/kontakt#stranica`,
+    url: `${siteUrl}/kontakt`,
+    name: `Kontakt — ${company.legalName}`,
+    inLanguage: 'hr-HR',
+    about: { '@id': `${siteUrl}/#organizacija` },
+    mainEntity: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      telephone: company.phone.display,
+      email: company.email.display,
+      areaServed: 'HR',
+      availableLanguage: ['hr'],
+    },
+  };
+}
+
 /** Popis usluga kao ItemList — pomaže tražilici razumjeti opseg djelatnosti. */
 export function servicesJsonLd() {
   return {

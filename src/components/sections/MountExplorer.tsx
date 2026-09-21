@@ -87,8 +87,14 @@ export function MountExplorer() {
         min-content sadrzaja, a `truncate` tekst u karticama ga u tom racunu
         drzi u jednom retku. Bez toga stranica na mobitelu ide u vodoravni
         pomak umjesto da se tekst skrati.
+
+        Ljepilo je na popisu tipova, a ne na prikazu: prikaz je visi stupac i
+        sam odreduje visinu retka, pa se nema uz sto zalijepiti. Popis je
+        krac i ostaje dohvatljiv dok se prolazi kroz prikaz, fotografiju i
+        opis. `lg:self-start` je uvjet — bez njega se stupac rastegne na punu
+        visinu retka i `sticky` opet nema ucinka.
       */}
-      <div className="min-w-0">
+      <div className="min-w-0 lg:sticky lg:top-28 lg:self-start">
         <div
           role="tablist"
           aria-label="Tipovi solarnih konstrukcija"
@@ -147,7 +153,7 @@ export function MountExplorer() {
         </div>
       </div>
 
-      <div className="min-w-0 lg:sticky lg:top-28">
+      <div className="min-w-0">
         <MountSceneFrame
           kind={category.slug as MountKind}
           className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/10 bg-petrol-900"

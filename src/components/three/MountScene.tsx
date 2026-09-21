@@ -845,7 +845,12 @@ export default function MountScene({
     <Canvas
       frameloop={active ? 'always' : 'never'}
       dpr={simplified ? [1, 1.4] : [1, 1.75]}
-      shadows={!simplified}
+      /*
+        `percentage` je PCFShadowMap. Zadani `true` u R3F-u trazi
+        PCFSoftShadowMap, koji je u three 0.186 uklonjen — pa renderer pri
+        svakoj promjeni ispisuje upozorenje i svejedno se vrati na PCF.
+      */
+      shadows={simplified ? false : 'percentage'}
       gl={{ antialias: !simplified, alpha: true, powerPreference: 'high-performance' }}
       camera={{ position: CONFIG[kind].camera, fov: 34 }}
       onCreated={({ gl }) => {

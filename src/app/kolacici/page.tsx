@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { LegalDocument } from '@/components/sections/LegalDocument';
 import { PageHero } from '@/components/ui/PageHero';
 import { cookieSections } from '@/content/legal';
-import { pageMetadata } from '@/lib/seo';
+import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Kolačići',
@@ -25,6 +25,18 @@ export default function CookiesPage() {
           <LegalDocument sections={cookieSections} />
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              { name: 'Početna', path: '/' },
+              { name: 'Kolačići', path: '/kolacici' },
+            ]),
+          ),
+        }}
+      />
     </>
   );
 }

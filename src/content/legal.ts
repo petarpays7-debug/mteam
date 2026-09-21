@@ -1,4 +1,4 @@
-import { company } from './company';
+import { company, companyRegistry } from './company';
 
 /**
  * Pravni tekstovi.
@@ -11,7 +11,7 @@ import { company } from './company';
  * skript, OBAVEZNO je dopuniti popis primatelja i uvesti traku za privolu.
  */
 
-export const legalUpdated = '20. rujna 2026.';
+export const legalUpdated = '22. rujna 2026.';
 
 /** Nadležno nadzorno tijelo u Republici Hrvatskoj. */
 export const supervisoryAuthority = {
@@ -182,3 +182,95 @@ export const cookieSections: LegalSection[] = [
     ],
   },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* Podaci o drustvu i prigovori potrosaca                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Obvezni podaci o trgovačkom društvu.
+ *
+ * Zakon o trgovačkim društvima (čl. 21.) traži da društvo na svojoj web
+ * stranici navede tvrtku, sjedište, sud i broj upisa u sudski registar, iznos
+ * temeljnog kapitala s naznakom je li uplaćen u cijelosti, članove uprave te
+ * banke i brojeve računa.
+ *
+ * Redovi za koje podatak još nije dostavljen izostavljaju se — vidi
+ * `companyRegistry` u `company.ts`. Tako stranica ne navodi netočan podatak,
+ * a prazno mjesto ostaje vidljivo kao zadatak prije objave.
+ */
+export const companyDetailsSections: LegalSection[] = (() => {
+  const rows: string[][] = [
+    ['Tvrtka', company.legalName],
+    [
+      'Sjedište',
+      `${company.registeredOffice.street}, ${company.registeredOffice.postalCode} ${company.registeredOffice.city}, ${company.registeredOffice.country}`,
+    ],
+    [
+      'Adresa za kontakt',
+      `${company.address.street}, ${company.address.postalCode} ${company.address.city}, ${company.address.country}`,
+    ],
+    [company.vatIdLabel, company.vatId],
+    [company.companyNumberLabel, company.companyNumber],
+    ['Pretežita djelatnost (NKD)', `${company.activity.code} — ${company.activity.name}`],
+    ['Godina osnutka', String(company.foundedYear)],
+  ];
+
+  if (companyRegistry.court) rows.push(['Registarski sud', companyRegistry.court]);
+  if (companyRegistry.courtNumber) rows.push(['MBS', companyRegistry.courtNumber]);
+  if (companyRegistry.shareCapital) {
+    rows.push([
+      'Temeljni kapital',
+      `${companyRegistry.shareCapital}${
+        companyRegistry.shareCapitalPaidInFull ? ', uplaćen u cijelosti' : ''
+      }`,
+    ]);
+  }
+  if (companyRegistry.boardMembers.length > 0) {
+    rows.push([
+      companyRegistry.boardMembers.length > 1 ? 'Članovi uprave' : 'Član uprave',
+      companyRegistry.boardMembers.join(', '),
+    ]);
+  }
+  for (const account of companyRegistry.bankAccounts) {
+    rows.push([`IBAN (${account.bank})`, account.iban]);
+  }
+
+  return [
+    {
+      heading: 'Podaci o društvu',
+      paragraphs: [
+        'Podaci koje trgovačko društvo prema Zakonu o trgovačkim društvima navodi na svojoj web stranici.',
+      ],
+      table: { columns: ['Podatak', 'Vrijednost'], rows },
+    },
+    {
+      heading: 'Kontakt',
+      list: [
+        `Telefon: ${company.phone.display}`,
+        `E-mail: ${company.email.display}`,
+        `Adresa: ${company.address.street}, ${company.address.postalCode} ${company.address.city}`,
+      ],
+    },
+    {
+      /*
+        Zakon o zastiti potrosaca (cl. 10.) trazi da trgovac omoguci pisani
+        prigovor i da na njega odgovori u roku od 15 dana.
+      */
+      heading: 'Prigovori potrošača',
+      paragraphs: [
+        `Sukladno Zakonu o zaštiti potrošača, prigovor na kvalitetu naše usluge možete podnijeti u pisanom obliku — poštom na adresu ${company.address.street}, ${company.address.postalCode} ${company.address.city} ili elektroničkom poštom na ${company.email.display}.`,
+        'U prigovoru navedite svoje ime i prezime te adresu za dostavu odgovora, jer bez tih podataka nismo u mogućnosti odgovoriti. Na zaprimljeni prigovor odgovaramo u pisanom obliku najkasnije u roku od 15 dana od dana zaprimanja.',
+        'Vodimo i čuvamo evidenciju zaprimljenih prigovora u skladu s propisima.',
+      ],
+    },
+    {
+      heading: 'Sadržaj ove stranice',
+      list: [
+        'Tekstovi, fotografije, oznake i grafička rješenja na ovoj stranici zaštićeni su i smiju se koristiti samo uz našu prethodnu suglasnost.',
+        'Podaci o uštedama, povratu investicije i uvjetima leasinga informativne su naravi i ne predstavljaju ponudu za sklapanje ugovora. Konkretni iznosi utvrđuju se tek nakon analize pojedinog projekta, odnosno odobrenja leasing društva.',
+        `${company.mountManufacturer} je proizvođač konstrukcija MT Mount, dok ${company.legalName} djeluje kao distributer.`,
+      ],
+    },
+  ];
+})();

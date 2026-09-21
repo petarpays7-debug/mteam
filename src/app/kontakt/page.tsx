@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { PageHero } from '@/components/ui/PageHero';
 import { Reveal } from '@/components/ui/Reveal';
 import { company, formattedAddress } from '@/content/company';
-import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
+import { breadcrumbJsonLd, contactPageJsonLd, jsonLdGraph, pageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Kontakt',
@@ -110,9 +110,9 @@ export default function ContactPage() {
 
             <Reveal direction="right" delay={0.08}>
               <ContactForm />
+              {/* Obavijest o obradi stoji u samom obrascu, uz gumb za slanje. */}
               <p className="mt-5 text-[0.8rem] leading-relaxed text-paper/40">
-                Podatke iz obrasca koristimo isključivo za odgovor na vaš upit. Ako slanje putem
-                obrasca nije dostupno, koristite telefon ili e-mail.
+                Ako slanje putem obrasca nije dostupno, koristite telefon ili e-mail.
               </p>
             </Reveal>
           </div>
@@ -122,7 +122,8 @@ export default function ContactPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
+          __html: jsonLdGraph(
+            contactPageJsonLd(),
             breadcrumbJsonLd([
               { name: 'Početna', path: '/' },
               { name: 'Kontakt', path: '/kontakt' },

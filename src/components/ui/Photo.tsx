@@ -20,6 +20,10 @@ type PhotoProps = {
  * Uz `output: 'export'` nema Next.js optimizacije slika u runtimeu, pa su
  * inačice pripremljene unaprijed (vidi `src/content/photos.ts`). Širina i
  * visina su uvijek navedene kako slika ne bi pomicala raspored (CLS).
+ *
+ * `w` deskriptori moraju odgovarati stvarnim širinama datoteka. S krivim
+ * vrijednostima preglednik bira pogrešnu inačicu — ili prevelikom troši
+ * promet, ili premalom gubi na oštrini.
  */
 export function Photo({
   photo,
@@ -42,7 +46,7 @@ export function Photo({
       */}
       <img
         src={photo.src}
-        srcSet={`${photo.small} 900w, ${photo.src} 1800w`}
+        srcSet={`${photo.small} ${photo.smallWidth}w, ${photo.src} ${photo.width}w`}
         sizes={sizes}
         alt={photo.alt}
         width={photo.width}

@@ -4,7 +4,18 @@ import { legalUpdated, supervisoryAuthority } from '@/content/legal';
 import type { LegalSection } from '@/content/legal';
 
 /** Zajednički prikaz pravnih tekstova — jednaka tipografija i struktura. */
-export function LegalDocument({ sections }: { sections: LegalSection[] }) {
+export function LegalDocument({
+  sections,
+  /*
+    `full` dodaje podatke o drustvu i nadzorno tijelo — to ide uz izjavu o
+    privatnosti i tekst o kolacicima. `minimal` ostavlja samo datum izmjene i
+    koristi se tamo gdje su podaci o drustvu vec sadrzaj same stranice.
+  */
+  footer = 'full',
+}: {
+  sections: LegalSection[];
+  footer?: 'full' | 'minimal';
+}) {
   return (
     <div className="max-w-prose">
       {sections.map((section, index) => (
@@ -71,44 +82,48 @@ export function LegalDocument({ sections }: { sections: LegalSection[] }) {
 
       <Reveal delay={0.1}>
         <div className="mt-14 border-t border-white/10 pt-8 text-sm leading-relaxed text-paper/55">
-          <p className="font-display font-semibold text-paper/85">Podaci o društvu</p>
-          <p className="mt-3">
-            {company.legalName}
-            <br />
-            Sjedište: {company.registeredOffice.street}, {company.registeredOffice.postalCode}{' '}
-            {company.registeredOffice.city}
-            <br />
-            Adresa za kontakt: {formattedAddress}
-            <br />
-            {company.vatIdLabel}: {company.vatId} · {company.companyNumberLabel}:{' '}
-            {company.companyNumber}
-            <br />
-            E-mail:{' '}
-            <a href={company.email.href} className="text-solar underline underline-offset-4">
-              {company.email.display}
-            </a>
-            <br />
-            Telefon:{' '}
-            <a href={company.phone.href} className="text-solar underline underline-offset-4">
-              {company.phone.display}
-            </a>
-          </p>
+          {footer === 'full' ? (
+            <>
+              <p className="font-display font-semibold text-paper/85">Podaci o društvu</p>
+              <p className="mt-3">
+                {company.legalName}
+                <br />
+                Sjedište: {company.registeredOffice.street}, {company.registeredOffice.postalCode}{' '}
+                {company.registeredOffice.city}
+                <br />
+                Adresa za kontakt: {formattedAddress}
+                <br />
+                {company.vatIdLabel}: {company.vatId} · {company.companyNumberLabel}:{' '}
+                {company.companyNumber}
+                <br />
+                E-mail:{' '}
+                <a href={company.email.href} className="text-solar underline underline-offset-4">
+                  {company.email.display}
+                </a>
+                <br />
+                Telefon:{' '}
+                <a href={company.phone.href} className="text-solar underline underline-offset-4">
+                  {company.phone.display}
+                </a>
+              </p>
 
-          <p className="mt-6 font-display font-semibold text-paper/85">Nadzorno tijelo</p>
-          <p className="mt-3">
-            {supervisoryAuthority.name}
-            <br />
-            {supervisoryAuthority.address}
-            <br />
-            <a
-              href={supervisoryAuthority.web}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-solar underline underline-offset-4"
-            >
-              {supervisoryAuthority.web.replace('https://', '')}
-            </a>
-          </p>
+              <p className="mt-6 font-display font-semibold text-paper/85">Nadzorno tijelo</p>
+              <p className="mt-3">
+                {supervisoryAuthority.name}
+                <br />
+                {supervisoryAuthority.address}
+                <br />
+                <a
+                  href={supervisoryAuthority.web}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-solar underline underline-offset-4"
+                >
+                  {supervisoryAuthority.web.replace('https://', '')}
+                </a>
+              </p>
+            </>
+          ) : null}
 
           <p className="mt-6 text-paper/40">Posljednja izmjena: {legalUpdated}</p>
         </div>

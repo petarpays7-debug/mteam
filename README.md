@@ -85,8 +85,9 @@ preko OpenNext adaptera na Cloudflare Workers.
 | `/mobilnost`  | M-CARS — vozila, principi i informativni uvjeti leasinga    |
 | `/mt-mount`   | MT Mount by Enerack — interaktivni pregled konstrukcija     |
 | `/kontakt`    | Kontaktni podaci i obrazac                                  |
-| `/privatnost` | Izjava o privatnosti (sadržajni predložak)                  |
-| `/kolacici`   | Kolačići (sadržajni predložak)                              |
+| `/podaci-o-tvrtki` | Obvezni podaci o društvu i prigovori potrošača         |
+| `/privatnost` | Izjava o privatnosti                                        |
+| `/kolacici`   | Kolačići                                                    |
 
 Uz njih se generiraju `/sitemap.xml` i `/robots.txt`.
 
@@ -99,7 +100,7 @@ tvrde vrijednosti.
 
 | Datoteka                     | Sadrži                                                      |
 | ---------------------------- | ----------------------------------------------------------- |
-| `src/content/company.ts`     | **Naziv, adresa, OIB, telefon, e-mail, godina osnutka**      |
+| `src/content/company.ts`     | **Naziv, adresa, OIB, telefon, e-mail, godina osnutka** i `companyRegistry` (sud, MBS, kapital, uprava, IBAN) |
 | `src/content/navigation.ts`  | Glavna i pravna navigacija                                   |
 | `src/content/services.ts`    | Usluge, elaborati (EUEM, EPZ, EMP, EOTRP, OPIP), HEP ODS     |
 | `src/content/leasing.ts`     | M-CARS principi i svi leasing uvjeti + pravna napomena       |
@@ -107,23 +108,86 @@ tvrde vrijednosti.
 | `src/content/home.ts`        | Hero, tri svijeta, koraci procesa, prednosti, povjerenje     |
 | `src/content/about.ts`       | Tekstovi stranice „O nama”                                   |
 | `src/content/photos.ts`      | Fotografije, opisi (alt) i podrijetlo svake slike             |
-| `src/content/legal.ts`       | **Izjava o privatnosti i tekst o kolačićima**                 |
+| `src/content/legal.ts`       | **Izjava o privatnosti, kolačići i obvezni podaci o društvu**  |
 | `src/content/faq.ts`         | Česta pitanja — vidljiva sekcija i `FAQPage` označavanje       |
+
+### Optimizacija za tražilice
+
+Sve je statički prerenderirano, pa tražilica dobiva gotov HTML bez izvršavanja
+JavaScripta.
+
+- **Metapodaci** — `src/lib/seo.ts` gradi naslov, opis, canonical URL, Open
+  Graph i Twitter karticu za svaku rutu. `pageMetadata()` je jedini ulaz, pa
+  nijedna ruta ne može ostati bez canonical URL-a.
+- **Open Graph slike** su PNG, ne SVG: Facebook, LinkedIn i X ne renderiraju
+  SVG kao `og:image`, pa bi pregled linka ostao prazan.
+- **Strukturirani podaci** — `LocalBusiness` i `WebSite` na svakoj stranici,
+  uz `ItemList`/`Service` (usluge), `FAQPage` (početna), `ContactPage` s
+  `ContactPoint` (kontakt) i `BreadcrumbList` na svakoj podstranici. Sadrže
+  isključivo provjerene podatke: nema ocjena, recenzija, radnog vremena ni
+  koordinata. Netočno označavanje vodi do ručne kazne.
+- **`sitemap.xml`** uključuje i slike po ruti (`image:image`), što pomaže
+  pretraživanju slika. `robots.txt` upućuje na njega.
+- **404** ima vlastiti naslov i `noindex` (Next ga dodaje sam za not-found).
+- **Ikone** — `npm run icons` iz `public/icon.svg` generira `favicon.ico`,
+  `apple-touch-icon.png` (iOS ne prikazuje SVG) te ikone za manifest.
+
+### Zaglavlja i sigurnost
+
+`public/_headers` uz uobičajena zaštitna zaglavlja postavlja i
+`Content-Security-Policy` koji dopušta **samo vlastito podrijetlo**. To je
+izvedivo jer stranica ne učitava nijedan vanjski resurs: tipografija se ugrađuje
+tijekom izrade, nema analitike ni ugrađenih sadržaja.
+
+`'unsafe-inline'` za skripte je nužan jer Next uz statički export ugrađuje
+početno stanje u inline `<script>` bez nonce vrijednosti; vanjska podrijetla su
+i dalje blokirana. `blob:` treba three.js-u.
+
+**Svaki novi vanjski skript, font ili ugrađeni sadržaj traži i izmjenu ove
+politike** — inače ga preglednik tiho blokira.
 
 ### Prije objave obavezno provjeriti
 
-1. **OIB** u `src/content/company.ts` — unesen je točno kako je dostavljen
-   (`H10707184811`). Standardni hrvatski OIB ima 11 znamenki bez slova; ako je
-   dostavljena vrijednost tipfeler, ispravite je na tom jednom mjestu.
-2. **`NEXT_PUBLIC_SITE_URL`** — koristi se za canonical URL-ove, sitemap i Open Graph.
-3. **Adresa** — sudski registar navodi sjedište `Kralja Tomislava 110, Čepin`, a
+Redoslijed je namjeran: prva tri su **blokirajuća** — bez njih stranica ne bi
+smjela ići u produkciju.
+
+1. **Podaci iz sudskog registra** — `companyRegistry` u `src/content/company.ts`
+   je **prazan**. Zakon o trgovačkim društvima (čl. 21.) traži da društvo na web
+   stranici navede registarski sud i MBS, iznos temeljnog kapitala s naznakom je
+   li uplaćen u cijelosti, članove uprave te banke i IBAN-e. Prazna polja se
+   **ne prikazuju** na `/podaci-o-tvrtki` — stranica radi, ali podatak nedostaje
+   dok ga se ne unese. Ne popunjavati nagađanjem.
+2. **Adresa** — sudski registar navodi sjedište `Kralja Tomislava 110, Čepin`, a
    postojeća stranica i narudžba navode `Osječka 188, 31431 Čepin`. Obje su u
    `company.ts` (`registeredOffice` i `address`): sjedište se koristi u pravnim
    tekstovima, a druga adresa u kontaktu. **Potvrditi koja je aktualna.**
-4. **`/privatnost` i `/kolacici`** — tekstovi opisuju točno ono što ova
-   implementacija radi i sastavljeni su prema Općoj uredbi o zaštiti podataka.
-   Prije objave neka ih pregleda odgovorna osoba. Ako se doda analitika ili bilo
-   koji vanjski skript, obavezno dopuniti popis primatelja i uvesti privolu.
+3. **Fotografije** — potvrditi pravo korištenja svake slike iz
+   `src/content/photos.ts`, posebno onih označenih `origin: 'stock'`.
+4. **`NEXT_PUBLIC_SITE_URL`** — koristi se za canonical URL-ove, sitemap i Open Graph.
+5. **OIB** — `10707184811`. Kontrolna znamenka je provjerena (ISO 7064,
+   MOD 11,10) i ispravna. Na staroj stranici stoji `H10707184811`, što nije
+   valjan OIB jer sadrži slovo; tu vrijednost ne vraćati.
+6. **Ovlaštenje HEP ODS-a** — tvrdnja u `src/content/services.ts` da je M-Team
+   ovlaštena pravna osoba za izradu elektroenergetskih elaborata preuzeta je s
+   postojeće stranice. Potvrditi da je i dalje važeća.
+7. **`/privatnost`, `/kolacici` i `/podaci-o-tvrtki`** — tekstovi opisuju točno
+   ono što ova implementacija radi. Prije objave neka ih pregleda odgovorna
+   osoba. Ako se doda analitika ili bilo koji vanjski skript, obavezno dopuniti
+   popis primatelja, uvesti privolu i proširiti `Content-Security-Policy` u
+   `public/_headers`.
+8. **Davatelj e-pošte** — dok environment varijable nisu postavljene, obrazac
+   vraća `503` i nudi telefon i e-mail. Vidi „Kontaktni obrazac”.
+
+### Što je pravno pokriveno
+
+| Obveza                                                  | Gdje                                    |
+| ------------------------------------------------------- | --------------------------------------- |
+| Obavijest o obradi pri prikupljanju (GDPR čl. 13.)      | uz gumb kontaktnog obrasca              |
+| Cjelovita izjava o privatnosti                          | `/privatnost`                           |
+| Kolačići i lokalna pohrana                              | `/kolacici` — nema privole jer nema kolačića |
+| Podaci o društvu (ZTD čl. 21.)                          | `/podaci-o-tvrtki`                      |
+| Pisani prigovor potrošača i rok od 15 dana (ZZP čl. 10.) | `/podaci-o-tvrtki`                      |
+| Ograde uz uštede, povrat i leasing                      | uz svaku tvrdnju i na `/podaci-o-tvrtki` |
 
 ---
 

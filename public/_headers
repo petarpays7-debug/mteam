@@ -5,8 +5,41 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
-  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin
+  X-DNS-Prefetch-Control: off
+  # Stranica ne ucitava nijedan vanjski resurs: tipografija je ugradena tijekom
+  # izrade, nema analitike ni ugradenih sadrzaja. Zato je politika stroga i
+  # dopusta samo vlastito podrijetlo.
+  #
+  # `unsafe-inline` za skripte je nuzan jer Next.js uz staticki export ugraduje
+  # pocetno stanje u inline `<script>` bez nonce vrijednosti. Vanjska podrijetla
+  # su i dalje blokirana, sto je glavna svrha ove politike.
+  #
+  # `blob:` je potreban trojci (three.js/drei) za radne niti i teksture s platna.
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
 
 # Hashirani Next.js asseti su immutable - smiju se kesirati trajno.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Fotografije i ikone mijenjaju se samo s novim imenom datoteke.
+/slike/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/og-*.png
+  Cache-Control: public, max-age=2592000
+
+/icon-*.png
+  Cache-Control: public, max-age=2592000
+
+/favicon.ico
+  Cache-Control: public, max-age=2592000
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=2592000
+
+# Odgovor obrasca se nikad ne kesira.
+/api/*
+  Cache-Control: no-store

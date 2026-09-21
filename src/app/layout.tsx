@@ -3,7 +3,7 @@ import { Manrope, Sora } from 'next/font/google';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { company, siteUrl } from '@/content/company';
-import { organizationJsonLd } from '@/lib/seo';
+import { jsonLdGraph, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 import './globals.css';
 
 /*
@@ -38,15 +38,24 @@ export const metadata: Metadata = {
   authors: [{ name: company.legalName }],
   formatDetection: { telephone: true, address: false, email: true },
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/icon.svg' }],
+    /*
+      `favicon.ico` je ovdje zbog citaca i alata koji jos uvijek traze
+      iskljucivo taj put, a `apple-touch-icon` mora biti PNG — iOS ne
+      prikazuje SVG na pocetnom zaslonu.
+    */
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
+  manifest: '/site.webmanifest',
   openGraph: {
     type: 'website',
     locale: 'hr_HR',
     siteName: company.legalName,
     url: siteUrl,
-    images: [{ url: '/og-default.svg', width: 1200, height: 630, alt: company.legalName }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: company.legalName }],
   },
 };
 
@@ -67,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           /* Sadrzi iskljucivo provjerene podatke iz src/content/company.ts. */
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdGraph(organizationJsonLd(), websiteJsonLd()) }}
         />
       </body>
     </html>

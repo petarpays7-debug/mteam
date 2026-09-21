@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import Link from 'next/link';
 import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
@@ -200,6 +201,23 @@ export function ContactForm() {
             autoComplete="off"
           />
         </div>
+
+        {/*
+          Obavijest o obradi na mjestu prikupljanja. Clanak 13. Opce uredbe
+          trazi da ispitanik bude obavijesten prije nego preda podatke, pa
+          obavijest stoji uz gumb, a ne negdje u podnozju.
+        */}
+        <p className="text-[0.8rem] leading-relaxed text-paper/45">
+          Slanjem upita vaše ime, e-mail adresu i sadržaj poruke koristimo isključivo za odgovor na
+          upit i pripremu ponude. Podatke ne prosljeđujemo trećima u njihove svrhe. Više u{' '}
+          <Link
+            href="/privatnost"
+            className="text-paper/70 underline underline-offset-4 transition-colors hover:text-solar"
+          >
+            Izjavi o privatnosti
+          </Link>
+          .
+        </p>
 
         <button
           type="submit"

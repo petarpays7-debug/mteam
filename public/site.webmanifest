@@ -1,0 +1,17 @@
+{
+  "name": "M-Team d.o.o.",
+  "short_name": "M-Team",
+  "description": "Solarne elektrane ključ u ruke, M-CARS vozila i MT Mount konstrukcije.",
+  "lang": "hr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#061A26",
+  "theme_color": "#061A26",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

@@ -1,6 +1,19 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { mainNav } from '@/content/navigation';
-import Link from 'next/link';
+
+/*
+  Bez ovoga 404 preuzima zadani naslov iz `layout.tsx`, pa u povijesti
+  preglednika i alatima izgleda kao obicna stranica.
+
+  `robots` se ovdje ne navodi: Next za not-found sam dodaje `noindex`, a drugi
+  `<meta name="robots">` bio bi samo duplikat.
+*/
+export const metadata: Metadata = {
+  title: 'Stranica nije pronađena',
+  description: 'Tražena stranica ne postoji ili je premještena.',
+};
 
 export default function NotFound() {
   return (

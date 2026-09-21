@@ -75,6 +75,46 @@ export const company = {
   mountManufacturer: 'Enerack',
 } as const;
 
+/**
+ * Podaci iz sudskog registra koje Zakon o trgovackim drustvima (cl. 21.)
+ * trazi na web stranici drustva, uz tvrtku i sjediste.
+ *
+ * PRIJE OBJAVE: popuniti prazna polja. Ono sto ostane prazno NE prikazuje se
+ * na stranici — izostavljen podatak je bolji od izmisljenog, a stranica ostaje
+ * upotrebljiva dok se podaci ne dobiju.
+ */
+export type CompanyRegistry = {
+  /** Trgovacki sud kod kojeg je drustvo upisano, npr. 'Trgovacki sud u Osijeku'. */
+  court: string;
+  /** MBS — maticni broj subjekta iz sudskog registra. */
+  courtNumber: string;
+  /** Iznos temeljnog kapitala s valutom, npr. '20.000,00 EUR'. */
+  shareCapital: string;
+  /** Je li temeljni kapital uplacen u cijelosti. */
+  shareCapitalPaidInFull: boolean;
+  /** Clanovi uprave — prezime i najmanje pocetno slovo imena. */
+  boardMembers: string[];
+  /** Banke kod kojih se vode racuni i pripadajuci IBAN-i. */
+  bankAccounts: Array<{ bank: string; iban: string }>;
+};
+
+export const companyRegistry: CompanyRegistry = {
+  court: '',
+  courtNumber: '',
+  shareCapital: '',
+  shareCapitalPaidInFull: true,
+  boardMembers: [],
+  bankAccounts: [],
+};
+
+/** Ima li dovoljno podataka da se sudski registar uopce prikaze. */
+export const hasRegistryData =
+  companyRegistry.court !== '' ||
+  companyRegistry.courtNumber !== '' ||
+  companyRegistry.shareCapital !== '' ||
+  companyRegistry.boardMembers.length > 0 ||
+  companyRegistry.bankAccounts.length > 0;
+
 export const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://www.m-team.hr';
 

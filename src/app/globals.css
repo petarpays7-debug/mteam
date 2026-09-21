@@ -16,6 +16,18 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+
+    /*
+      Ulazne animacije krecu s pomakom po osi X (`Reveal direction="right"`),
+      pa na uskim zaslonima sadrzaj nakratko prijede desni rub i stranica
+      dobije vodoravni pomak od nekoliko piksela.
+
+      `clip` je ovdje namjerno umjesto `hidden`: `hidden` bi od korijena
+      napravio spremnik za pomicanje i time pokvario `position: sticky`
+      elemente (pregled konstrukcija, bocni stupci). `clip` samo odrezuje
+      prelijevanje i ne dira pomicanje.
+    */
+    overflow-x: clip;
   }
 
   body {
