@@ -36,6 +36,8 @@ export type InstanceTransform = {
   glow: number;
   /** 0 = dielektrik (staklo, guma), 1 = metal (celik, lak). */
   metal: number;
+  /** 1 = na instancu se crta tekstura fotonaponskog modula. */
+  panel: number;
 };
 
 /* Paleta ---------------------------------------------------------------- */
@@ -67,6 +69,7 @@ function emptyTransform(): InstanceTransform {
     gloss: 0.35,
     glow: 0,
     metal: 0.5,
+    panel: 0,
   };
 }
 
@@ -117,6 +120,7 @@ function buildSolarState(): InstanceTransform[] {
     t.color.copy((col + row) % 7 === 0 ? PANEL_MID : PANEL_DEEP);
     t.gloss = 0.88;
     t.metal = 0.18;
+    t.panel = 1;
     out.push(t);
   }
 
@@ -156,6 +160,16 @@ const RAIL_CLEARANCE = 0.32;
 
 const RAIL_Z = [-1.45, 1.45];
 const POST_X = [-4.2, -3.0, -1.8, -0.6, 0.6, 1.8, 3.0, 4.2];
+
+/*
+  Raspodjela 320 instanci mora biti tocna:
+  16 stupova + 4 nosaca + 8 spona + 6 potpornja = 34 konstrukcije,
+  a preostalih 286 cini punu mrezu modula 22 x 13.
+*/
+const MOUNT_BRACES = 8;
+const MOUNT_SUPPORTS = 6;
+const MOUNT_PANEL_COLS = 22;
+const MOUNT_PANEL_ROWS = 13;
 
 function arrayPlaneY(z: number): number {
   return ARRAY_BASE_Y - z * MOUNT_SLOPE;
@@ -200,7 +214,7 @@ function buildMountState(): InstanceTransform[] {
   const braceLength = Math.hypot(braceSpan, braceRise);
   const braceAngle = Math.atan2(braceRise, braceSpan);
 
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < MOUNT_BRACES; i += 1) {
     const t = emptyTransform();
     t.position.set(
       -3.6 + i * 1.03,
@@ -217,7 +231,7 @@ function buildMountState(): InstanceTransform[] {
   }
 
   /* Okomiti potpornji izmedu spona i tla. */
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < MOUNT_SUPPORTS; i += 1) {
     const z = i % 2 === 0 ? -0.5 : 0.5;
     const top = arrayPlaneY(z) - RAIL_CLEARANCE - 0.2;
     const height = top - GROUND_Y;
@@ -230,15 +244,20 @@ function buildMountState(): InstanceTransform[] {
     out.push(t);
   }
 
-  /* Moduli polozeni na ravninu konstrukcije. */
-  const panelCount = INSTANCE_COUNT - out.length;
-  const pCols = 22;
-  const pRows = Math.ceil(panelCount / pCols);
+  /*
+    Moduli popunjavaju punu pravokutnu mrezu.
+
+    Broj potpornja gore odabran je tako da preostali broj instanci bude tocno
+    MOUNT_PANEL_COLS * MOUNT_PANEL_ROWS. Ranije se koristio `Math.ceil`, pa je
+    zadnji red ostajao nepotpun i u polju su nedostajala dva modula.
+  */
+  const panelCount = MOUNT_PANEL_COLS * MOUNT_PANEL_ROWS;
+  const pCols = MOUNT_PANEL_COLS;
 
   for (let i = 0; i < panelCount; i += 1) {
     const col = i % pCols;
     const row = Math.floor(i / pCols);
-    const z = (row - (pRows - 1) / 2) * 0.26;
+    const z = (row - (MOUNT_PANEL_ROWS - 1) / 2) * 0.26;
 
     const t = emptyTransform();
     t.position.set((col - (pCols - 1) / 2) * 0.42, arrayPlaneY(z), z);
@@ -247,7 +266,15 @@ function buildMountState(): InstanceTransform[] {
     t.color.copy(col % 5 === 0 ? PANEL_MID : PANEL_DEEP);
     t.gloss = 0.88;
     t.metal = 0.18;
+    t.panel = 1;
     out.push(t);
+  }
+
+  if (out.length !== INSTANCE_COUNT) {
+    // Zastita: broj elemenata mora tocno odgovarati, inace se u polju vide rupe.
+    throw new Error(
+      `MT Mount raspored: ${out.length} instanci umjesto ${INSTANCE_COUNT}.`,
+    );
   }
 
   for (const t of out) {
@@ -342,6 +369,8 @@ function buildCarState(): InstanceTransform[] {
           t.color.copy(Math.abs(v) < 0.4 ? CAR_PAINT_HI : CAR_PAINT);
           t.gloss = 0.84;
           t.metal = 0.5;
+          // Karoserija je poplocana modulima — i ona nosi teksturu celija.
+          t.panel = 1;
       }
 
       out.push(t);

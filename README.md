@@ -108,6 +108,7 @@ tvrde vrijednosti.
 | `src/content/about.ts`       | Tekstovi stranice „O nama”                                   |
 | `src/content/photos.ts`      | Fotografije, opisi (alt) i podrijetlo svake slike             |
 | `src/content/legal.ts`       | **Izjava o privatnosti i tekst o kolačićima**                 |
+| `src/content/faq.ts`         | Česta pitanja — vidljiva sekcija i `FAQPage` označavanje       |
 
 ### Prije objave obavezno provjeriti
 
@@ -161,6 +162,7 @@ Sve je proceduralno — nema vanjskih glTF modela ni HDR datoteka.
 | Datoteka                             | Uloga                                                                |
 | ------------------------------------ | -------------------------------------------------------------------- |
 | `three/carShape.ts`                  | Parametarski oblik karoserije — **jedini izvor istine za vozilo**     |
+| `three/panelTexture.ts`              | Proceduralna tekstura fotonaponskog modula (ćelije, sabirnice)        |
 | `three/layouts.ts`                   | Rasporedi 320 instanci za tri stanja hero scene                       |
 | `three/HeroScene.tsx`                | Hero: morph solarno polje → konstrukcija → vozilo                     |
 | `three/MountScene.tsx`               | MT Mount: „exploded view” nosivog sustava po kategoriji               |
@@ -180,15 +182,45 @@ voznog parka. Razlog je u odjeljku „Zašto na M-CARS stranici nema 3D modela�
 ### Materijali unutar jednog instanced mesha
 
 Hero scena crta svih 320 instanci jednim pozivom. Da bi staklo modula, brušeni
-čelik, lak karoserije, guma i svjetla ipak izgledali različito, tri atributa po
-instanci (`aGloss`, `aMetal`, `aGlow`) ubacuju se u standardni PBR shader preko
-`onBeforeCompile`. `aGlow` pogoni emisiju koju zatim hvata bloom.
+čelik, lak karoserije, guma i svjetla ipak izgledali različito, četiri atributa
+po instanci ubacuju se u standardni PBR shader preko `onBeforeCompile`:
+
+| Atribut   | Uloga                                                             |
+| --------- | ----------------------------------------------------------------- |
+| `aGloss`  | hrapavost — od mat čelika do stakla modula                         |
+| `aMetal`  | metalnost — guma i staklo su dielektrici, čelik i lak nisu         |
+| `aGlow`   | emisija svjetala vozila, koju zatim hvata bloom                    |
+| `aPanel`  | na instancu se crta tekstura fotonaponskog modula                  |
+
+Tekstura modula nosi samo množitelj svjetline (ćelije, razmaci, sabirnice,
+zakošeni uglovi), pa boja i dalje dolazi iz boje po instanci. Aluminijski okvir
+se ne crta u teksturi nego se računa u shaderu iz UV koordinata — tako je
+jednako debeo bez obzira na veličinu pločice.
 
 ### Morph prijelaz
+
+Prijelaz ide **izravno** iz zatečenog stanja u odabrano: u trenutku promjene
+zamrzne se trenutna slika i iz nje se interpolira u cilj. Zato odabir M-CARS-a
+iz solarnog polja ne prolazi usput kroz konstrukciju.
 
 Svaka instanca kreće s malim kašnjenjem ovisnim o položaju, opisuje luk i
 zavrti se oko vlastite osi dok putuje. Preobrazba se tako prelijeva preko
 objekta umjesto da se sve pomakne odjednom.
+
+### Sunce
+
+Sunce se ne kreće jednoliko. Vidljivi dio putanje prijeđe za 3 s, a zatim 15 s
+putuje iza scene. Prvi prijelaz kreće 0,4 s nakon učitavanja i završava na 3,4 s.
+Sunčev kolut i odbljesak na modulima dijele isti smjer, pa putuju zajedno.
+
+Isti ritam ima i istaknuti dio naslova u herou (`.sun-text` u `globals.css`):
+prijelaz traje 3 s od 18 s ciklusa, s istim kašnjenjem od 0,4 s.
+
+### Vrijeme, ne broj frameova
+
+Trajanja se mjere preko `performance.now()`, a ne zbrajanjem `dt` ili preko sata
+scene. Oboje staje zajedno s render petljom, koju namjerno pauziramo kad kartica
+nije aktivna — animacije bi tada ostajale zaglavljene na početku.
 
 ### Pravila izvedbe
 
@@ -242,6 +274,40 @@ označenih kao `stock`.
 
 Stock materijal (Pexels, Unsplash) nije „bez autorskih prava” — licencu treba
 provjeriti prije objave.
+
+---
+
+## SEO
+
+| Element                | Stanje                                                          |
+| ---------------------- | ---------------------------------------------------------------- |
+| Naslov i opis          | jedinstveni po ruti                                               |
+| Canonical              | apsolutni, iz `NEXT_PUBLIC_SITE_URL`                              |
+| `robots` direktive     | `max-image-preview:large`, `max-snippet:-1`                       |
+| Open Graph             | **PNG 1200×630 po sekciji** — mreže ne prikazuju SVG              |
+| `LocalBusiness`        | samo provjereni podaci iz `company.ts`, uz `sameAs`               |
+| `ItemList` / `Service` | šest usluga, na naslovnici i `/usluge`                            |
+| `FAQPage`              | 10 pitanja, tekst identičan vidljivom sadržaju                    |
+| `BreadcrumbList`       | na svim podstranicama                                             |
+| Sitemap                | prioriteti po ruti + slike (`image:image`)                        |
+| Semantika              | jedan `h1` po stranici, `aria-labelledby` na sekcijama            |
+
+Strukturirani podaci namjerno **ne** sadrže ocjene, recenzije, radno vrijeme ni
+koordinate — netočno označavanje može dovesti do ručne kazne u tražilici.
+
+FAQ sadržaj živi u `src/content/faq.ts` i koristi se na dva mjesta: u vidljivoj
+sekciji i u `FAQPage` označavanju. Mora ostati identičan na oba.
+
+---
+
+## Tipografija
+
+Naslovi koriste **Sora**, tekst **Manrope**. Sora je geometrijski grotesk s
+izraženijim karakterom od Montserrata i na velikim naslovima djeluje tehničnije.
+
+Za povratak na Montserrat dovoljno je zamijeniti uvoz i poziv u
+`src/app/layout.tsx` te fallback u `tailwind.config.ts` — ostatak stilova ide
+preko CSS varijable `--font-display`.
 
 ---
 

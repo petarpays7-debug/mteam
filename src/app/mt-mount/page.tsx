@@ -15,6 +15,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     'Konstrukcije i nosači za solarne panele: kosi i limeni krov, ravni krov, ground mount, carporti i solarne ograde. M-Team je distributer Enerack konstrukcija.',
   path: '/mt-mount',
+  image: '/og-mt-mount.png',
 });
 
 export default function MountPage() {

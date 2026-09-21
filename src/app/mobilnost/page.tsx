@@ -25,6 +25,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     'M-CARS nudi pažljivo odabrana rabljena vozila s jamstvom od 12 mjeseci i urednom servisnom poviješću, uz informativne uvjete leasinga.',
   path: '/mobilnost',
+  image: '/og-mobilnost.png',
 });
 
 export default function CarsPage() {

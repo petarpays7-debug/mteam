@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Faq } from '@/components/sections/Faq';
 import { FinalCta } from '@/components/sections/FinalCta';
 import { Hero } from '@/components/sections/Hero';
 import { ProcessTimeline } from '@/components/sections/ProcessTimeline';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHeader } from '@/components/ui/Section';
 import { hepAuthorisation } from '@/content/services';
-import { pageMetadata } from '@/lib/seo';
+import { faqJsonLd, jsonLdGraph, pageMetadata, servicesJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Solarne elektrane ključ u ruke',
@@ -56,7 +57,13 @@ export default function HomePage() {
       </section>
 
       <TrustSection />
+      <Faq />
       <FinalCta />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdGraph(faqJsonLd(), servicesJsonLd()) }}
+      />
     </>
   );
 }

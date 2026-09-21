@@ -1,12 +1,18 @@
 import type { Metadata, Viewport } from 'next';
-import { Manrope, Montserrat } from 'next/font/google';
+import { Manrope, Sora } from 'next/font/google';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { company, siteUrl } from '@/content/company';
 import { organizationJsonLd } from '@/lib/seo';
 import './globals.css';
 
-const display = Montserrat({
+/*
+  Naslovni rez. Sora je geometrijski grotesk s izrazenijim karakterom od
+  Montserrata — na velikim naslovima djeluje tehnicnije i manje genericno.
+  Za povratak na Montserrat dovoljno je zamijeniti uvoz i ovaj poziv;
+  ostatak stilova ide preko CSS varijable --font-display.
+*/
+const display = Sora({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-display',
   weight: ['500', '600', '700'],

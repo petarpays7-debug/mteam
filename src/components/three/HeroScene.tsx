@@ -15,6 +15,7 @@ import {
   staggerFor,
 } from './layouts';
 import type { InstanceTransform } from './layouts';
+import { getPanelTexture } from './panelTexture';
 import type { WorldId } from '@/content/home';
 
 const WORLD_TO_STATE: Record<WorldId, number> = { solar: 0, mount: 1, cars: 2 };
@@ -47,6 +48,7 @@ type Resources = {
   gloss: THREE.InstancedBufferAttribute;
   glow: THREE.InstancedBufferAttribute;
   metal: THREE.InstancedBufferAttribute;
+  panel: THREE.InstancedBufferAttribute;
 };
 
 function createResources(simplified: boolean): Resources {
@@ -55,10 +57,12 @@ function createResources(simplified: boolean): Resources {
   const gloss = new THREE.InstancedBufferAttribute(new Float32Array(INSTANCE_COUNT), 1);
   const glow = new THREE.InstancedBufferAttribute(new Float32Array(INSTANCE_COUNT), 1);
   const metal = new THREE.InstancedBufferAttribute(new Float32Array(INSTANCE_COUNT), 1);
+  const panel = new THREE.InstancedBufferAttribute(new Float32Array(INSTANCE_COUNT), 1);
 
   geometry.setAttribute('aGloss', gloss);
   geometry.setAttribute('aGlow', glow);
   geometry.setAttribute('aMetal', metal);
+  geometry.setAttribute('aPanel', panel);
 
   const material = simplified
     ? new THREE.MeshStandardMaterial({ metalness: 0.4, roughness: 0.4, envMapIntensity: 3.2 })
@@ -76,7 +80,11 @@ function createResources(simplified: boolean): Resources {
     razliku materijala unutar jednog instanced mesha: staklo modula,
     brusceni celik konstrukcije, lak karoserije, guma i svjetla vozila.
   */
+  const panelMap = getPanelTexture();
+
   material.onBeforeCompile = (shader) => {
+    shader.uniforms.uPanelMap = { value: panelMap };
+
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -84,30 +92,64 @@ function createResources(simplified: boolean): Resources {
          attribute float aGloss;
          attribute float aGlow;
          attribute float aMetal;
+         attribute float aPanel;
          varying float vGloss;
          varying float vGlow;
-         varying float vMetal;`,
+         varying float vMetal;
+         varying float vPanel;
+         varying vec2 vPanelUv;`,
       )
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
          vGloss = aGloss;
          vGlow = aGlow;
-         vMetal = aMetal;`,
+         vMetal = aMetal;
+         vPanel = aPanel;
+         vPanelUv = uv;`,
       );
 
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
+         uniform sampler2D uPanelMap;
          varying float vGloss;
          varying float vGlow;
-         varying float vMetal;`,
+         varying float vMetal;
+         varying float vPanel;
+         varying vec2 vPanelUv;`,
+      )
+      /*
+        Tekstura modula: RGB je mnozitelj svjetline (celije, razmaci, sabirnice),
+        a alfa je maska aluminijskog okvira koji ide prema neutralnom srebru.
+        Primjenjuje se tek nakon boje po instanci i samo tamo gdje je vPanel = 1.
+      */
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+         if (vPanel > 0.001) {
+           float cells = texture2D(uPanelMap, vPanelUv).r;
+           // Okvir se racuna iz UV-a, pa je jednako debeo na svakoj plocici.
+           vec2 edge = min(vPanelUv, 1.0 - vPanelUv);
+           float border = min(edge.x * 1.65, edge.y);
+           float frame = 1.0 - smoothstep(0.016, 0.028, border);
+
+           vec3 lit = diffuseColor.rgb * cells;
+           lit = mix(lit, vec3(0.42, 0.47, 0.52), frame);
+           diffuseColor.rgb = mix(diffuseColor.rgb, lit, vPanel);
+         }`,
       )
       .replace(
         '#include <roughnessmap_fragment>',
         `#include <roughnessmap_fragment>
-         roughnessFactor = mix(0.82, 0.26, clamp(vGloss, 0.0, 1.0));`,
+         roughnessFactor = mix(0.82, 0.26, clamp(vGloss, 0.0, 1.0));
+         // Okvir je glatkiji od same celije.
+         if (vPanel > 0.001) {
+           vec2 rEdge = min(vPanelUv, 1.0 - vPanelUv);
+           float rFrame = 1.0 - smoothstep(0.016, 0.028, min(rEdge.x * 1.65, rEdge.y));
+           roughnessFactor = mix(roughnessFactor, 0.2, rFrame * vPanel);
+         }`,
       )
       .replace(
         '#include <metalnessmap_fragment>',
@@ -122,7 +164,7 @@ function createResources(simplified: boolean): Resources {
       );
   };
 
-  return { geometry, material, gloss, glow, metal };
+  return { geometry, material, gloss, glow, metal, panel };
 }
 
 /**
@@ -143,6 +185,7 @@ type MorphBuffer = {
   gloss: Float32Array;
   glow: Float32Array;
   metal: Float32Array;
+  panel: Float32Array;
 };
 
 function createBuffer(source: InstanceTransform[]): MorphBuffer {
@@ -154,6 +197,7 @@ function createBuffer(source: InstanceTransform[]): MorphBuffer {
     gloss: Float32Array.from(source, (t) => t.gloss),
     glow: Float32Array.from(source, (t) => t.glow),
     metal: Float32Array.from(source, (t) => t.metal),
+    panel: Float32Array.from(source, (t) => t.panel),
   };
 }
 
@@ -167,6 +211,7 @@ function copyBuffer(from: MorphBuffer, to: MorphBuffer) {
   to.gloss.set(from.gloss);
   to.glow.set(from.glow);
   to.metal.set(from.metal);
+  to.panel.set(from.panel);
 }
 
 type MorphMemory = { current: MorphBuffer; start: MorphBuffer; world: WorldId };
@@ -245,6 +290,16 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
     };
   }, [resources]);
 
+  /*
+    Ulazna animacija se veze uz mount, a ne uz prvi nacrtani frame. Ako je
+    scena montirana dok stranica nije vidljiva, prvi frame dolazi tek nakon
+    povratka korisnika — tada animacija vise nema smisla i objekt treba biti
+    slozen.
+  */
+  useEffect(() => {
+    introStart.current = clockSeconds();
+  }, []);
+
   useFrame((state, delta) => {
     const mesh = meshRef.current;
     if (!mesh) return;
@@ -253,8 +308,7 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
     const time = clockSeconds();
 
     // Ulazna animacija: objekt se postupno formira umjesto da naglo iskoci.
-    if (introStart.current === null) introStart.current = time;
-    const introRaw = reduced
+    const introRaw = reduced || introStart.current === null
       ? 1
       : THREE.MathUtils.clamp((time - introStart.current) / INTRO_DURATION, 0, 1);
     const introEase = 1 - Math.pow(1 - introRaw, 3);
@@ -291,9 +345,11 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
     const glossAttr = attributes.aGloss;
     const glowAttr = attributes.aGlow;
     const metalAttr = attributes.aMetal;
+    const panelAttr = attributes.aPanel;
     const glossData = glossAttr.array as Float32Array;
     const glowData = glowAttr.array as Float32Array;
     const metalData = metalAttr.array as Float32Array;
+    const panelData = panelAttr.array as Float32Array;
 
     for (let i = 0; i < INSTANCE_COUNT; i += 1) {
       const b = to[i];
@@ -316,6 +372,7 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
       current.gloss[i] = THREE.MathUtils.lerp(start.gloss[i], b.gloss, local);
       current.glow[i] = THREE.MathUtils.lerp(start.glow[i], b.glow, local);
       current.metal[i] = THREE.MathUtils.lerp(start.metal[i], b.metal, local);
+      current.panel[i] = THREE.MathUtils.lerp(start.panel[i], b.panel, local);
 
       tmpPos.copy(current.position[i]);
       tmpScale.copy(current.scale[i]);
@@ -348,6 +405,7 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
       glossData[i] = current.gloss[i];
       glowData[i] = current.glow[i];
       metalData[i] = current.metal[i];
+      panelData[i] = current.panel[i];
     }
 
     mesh.instanceMatrix.needsUpdate = true;
@@ -355,6 +413,7 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
     glossAttr.needsUpdate = true;
     glowAttr.needsUpdate = true;
     metalAttr.needsUpdate = true;
+    panelAttr.needsUpdate = true;
 
     const group = groupRef.current;
     if (!group) return;
@@ -400,17 +459,18 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
 /*
   Prelazak sunca preko modula.
 
-  Ciklus traje SUN_PERIOD sekundi, ali sunce se NE krece jednolikom brzinom.
-  Vidljivi dio putanje (ispred scene, preko polja modula) prijede za
-  SUN_SWEEP sekundi, a preostalo vrijeme putuje iza scene gdje se ne vidi.
-  Zato je odbljesak brz i upadljiv, a ponavlja se svakih SUN_PERIOD sekundi.
+  Sunce se NE krece jednolikom brzinom. Vidljivi dio putanje — ispred scene,
+  preko polja modula — prijede za SUN_SWEEP sekundi, a zatim SUN_GAP sekundi
+  putuje iza scene, gdje ga nema.
 
-  SUN_DELAY pomice pocetak tako da prvi prelazak krene odmah nakon sto se
-  moduli slozi u polje.
+  Prvi prelazak krene na 0.4 s i zavrsi na 3.4 s, dakle unutar prve cetiri
+  sekunde od ucitavanja. Sljedeci krece 15 sekundi nakon sto prethodni zavrsi.
 */
-const SUN_PERIOD = 15;
-const SUN_SWEEP = 2.2;
-const SUN_DELAY = 0.6;
+const SUN_SWEEP = 3;
+/** Koliko sunca nema izmedu dva prelaska. */
+const SUN_GAP = 15;
+const SUN_PERIOD = SUN_SWEEP + SUN_GAP;
+const SUN_DELAY = 0.4;
 
 /** Kutovi izmedu kojih je sunce ispred scene i odbljesak je vidljiv. */
 const SUN_ARC_START = -0.4;
@@ -476,10 +536,18 @@ function SunSweep({ reduced }: { reduced: boolean }) {
     }
 
     lightRef.current?.position.set(x, y, z);
+
     if (glowRef.current) {
-      // Sunce stoji daleko iza scene i ostaje diskretno - ne smije progutati kadar.
-      glowRef.current.position.set(x * 0.55, y * 0.42 + 1.4, -13);
+      /*
+        Sunčev kolut stoji na istom smjeru kao i svjetlo, samo dalje. Tako
+        vidljivo sunce i odbljesak na modulima putuju zajedno — inace se cini
+        da su to dvije nepovezane pojave.
+      */
+      glowRef.current.position.set(x * 1.35, y * 1.15, z * 1.35 - 6);
       glowRef.current.lookAt(state.camera.position);
+      const material = glowRef.current.material as THREE.MeshBasicMaterial;
+      // Kolut se vidi samo dok je sunce ispred scene.
+      material.opacity = Math.max(Math.sin(t), 0) * 0.85;
     }
   });
 

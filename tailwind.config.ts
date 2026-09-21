@@ -53,7 +53,7 @@ const config: Config = {
         97: '0.97',
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Montserrat', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Sora', 'system-ui', 'sans-serif'],
         sans: ['var(--font-body)', 'Manrope', 'system-ui', 'sans-serif'],
       },
       fontSize: {

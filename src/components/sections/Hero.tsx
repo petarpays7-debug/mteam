@@ -48,7 +48,7 @@ export function Hero() {
             className="mt-5 text-display-xl"
           >
             Pretvaramo sunce u{' '}
-            <span className="relative whitespace-nowrap text-solar">
+            <span className="sun-text relative whitespace-nowrap">
               vašu energiju.
               <motion.span
                 aria-hidden

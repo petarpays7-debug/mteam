@@ -10,13 +10,14 @@ import { SectionHeader } from '@/components/ui/Section';
 import { processSteps } from '@/content/home';
 import { photos } from '@/content/photos';
 import { elaborates, hepAuthorisation } from '@/content/services';
-import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
+import { breadcrumbJsonLd, jsonLdGraph, pageMetadata, servicesJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Usluge',
   description:
     'Solarne elektrane ključ u ruke, projektiranje i tehnička dokumentacija, inženjering i nadzor, distribucija opreme, tehničko savjetovanje te elektroenergetski elaborati EUEM, EPZ, EMP, EOTRP i OPIP.',
   path: '/usluge',
+  image: '/og-usluge.png',
 });
 
 export default function ServicesPage() {
@@ -138,11 +139,12 @@ export default function ServicesPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
+          __html: jsonLdGraph(
             breadcrumbJsonLd([
               { name: 'Početna', path: '/' },
               { name: 'Usluge', path: '/usluge' },
             ]),
+            servicesJsonLd(),
           ),
         }}
       />
