@@ -84,6 +84,12 @@ function createResources(simplified: boolean): Resources {
 
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uPanelMap = { value: panelMap };
+    shader.uniforms.uSweep = { value: 999 };
+    shader.uniforms.uSweepWidth = { value: SWEEP_WIDTH };
+    shader.uniforms.uSweepStrength = { value: 0 };
+
+    // Shader se cuva da bi se uniformi trake mogli mijenjati svaki frame.
+    material.userData.shader = shader;
 
     shader.vertexShader = shader.vertexShader
       .replace(
@@ -97,7 +103,8 @@ function createResources(simplified: boolean): Resources {
          varying float vGlow;
          varying float vMetal;
          varying float vPanel;
-         varying vec2 vPanelUv;`,
+         varying vec2 vPanelUv;
+         varying float vSweepX;`,
       )
       .replace(
         '#include <begin_vertex>',
@@ -106,7 +113,13 @@ function createResources(simplified: boolean): Resources {
          vGlow = aGlow;
          vMetal = aMetal;
          vPanel = aPanel;
-         vPanelUv = uv;`,
+         vPanelUv = uv;
+         #ifdef USE_INSTANCING
+           // Cetvrti stupac matrice instance je njezin pomak — treba nam X.
+           vSweepX = instanceMatrix[3][0];
+         #else
+           vSweepX = 0.0;
+         #endif`,
       );
 
     shader.fragmentShader = shader.fragmentShader
@@ -114,6 +127,10 @@ function createResources(simplified: boolean): Resources {
         '#include <common>',
         `#include <common>
          uniform sampler2D uPanelMap;
+         uniform float uSweep;
+         uniform float uSweepWidth;
+         uniform float uSweepStrength;
+         varying float vSweepX;
          varying float vGloss;
          varying float vGlow;
          varying float vMetal;
@@ -160,7 +177,38 @@ function createResources(simplified: boolean): Resources {
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
          // vColor je vec4 kada je ukljucena boja po instanci - nuzan je .rgb.
-         totalEmissiveRadiance += vColor.rgb * vGlow * 2.6;`,
+         totalEmissiveRadiance += vColor.rgb * vGlow * 2.6;
+
+         /*
+           Traka svjetla koja putuje preko scene.
+
+           Usmjereno svjetlo samo po sebi daje odsjaj tek pod povoljnim kutom,
+           pa se na dijelu ploha ne vidi nista. Ova traka jamci da prelazak
+           bude citljiv na svemu — modulima, konstrukciji i karoseriji — i na
+           uredajima bez bloom-a.
+
+           Na modulima se moduliira teksturom celija, pa svjetlo po njima
+           titra umjesto da klizi kao ravna ploha.
+         */
+         if (uSweepStrength > 0.001) {
+           float sweepD = (vSweepX - uSweep) / uSweepWidth;
+           float band = exp(-sweepD * sweepD);
+
+           if (band > 0.002) {
+             float facing = clamp(dot(normalize(vNormal), normalize(vec3(0.0, 0.55, 0.84))), 0.0, 1.0);
+             vec3 rayColor = vec3(1.0, 0.86, 0.58);
+
+             if (vPanel > 0.001) {
+               // Staklo modula: svjetlo hvata cijelu plohu, ali titra po celijama.
+               float sparkle = texture2D(uPanelMap, vPanelUv).r;
+               totalEmissiveRadiance += rayColor * band * uSweepStrength * sparkle * (0.22 + 1.5 * facing);
+             } else {
+               // Lak i metal: uzak odsjaj koji klizi, a ne ravnomjeran sjaj po cijeloj plohi.
+               float streak = band * band;
+               totalEmissiveRadiance += rayColor * streak * uSweepStrength * (0.08 + 1.35 * pow(facing, 3.0));
+             }
+           }
+         }`,
       );
   };
 
@@ -408,6 +456,23 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
       panelData[i] = current.panel[i];
     }
 
+    /*
+      Traka svjetla — isti izvor istine kao i usmjereno svjetlo.
+
+      Shader se, kao i atributi iznad, cita s mesha a ne iz memoizirane
+      vrijednosti: uniformi su GPU stanje koje mijenjamo svaki frame.
+    */
+    const sun = reduced
+      ? sunState(SWEEP_DELAY + SWEEP_DURATION * 0.5)
+      : sunState(clockSeconds());
+    const shader = (mesh.material as THREE.Material).userData.shader as
+      | { uniforms: Record<string, { value: number }> }
+      | undefined;
+    if (shader) {
+      shader.uniforms.uSweep.value = sun.band;
+      shader.uniforms.uSweepStrength.value = sun.strength * (simplified ? 1.35 : 1);
+    }
+
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     glossAttr.needsUpdate = true;
@@ -457,149 +522,79 @@ function MorphingArray({ world, scrollProgress, reduced, simplified }: SceneProp
 /* -------------------------------------------------------------------------- */
 
 /*
-  Prelazak sunca preko modula.
+  Prelazak svjetla preko scene.
 
-  Sunce se NE krece jednolikom brzinom. Vidljivi dio putanje — ispred scene,
-  preko polja modula — prijede za SUN_SWEEP sekundi, a zatim SUN_GAP sekundi
-  putuje iza scene, gdje ga nema.
+  Nema suncevog koluta — prelazi samo svjetlost: zraka putuje s jedne strane na
+  drugu, a povrsine koje zahvati zasvijetle i presijavaju se. Radi jednako na
+  modulima, na konstrukciji i na karoseriji vozila.
 
-  Prvi prelazak krene na 0.4 s i zavrsi na 3.4 s, dakle unutar prve cetiri
-  sekunde od ucitavanja. Sljedeci krece 15 sekundi nakon sto prethodni zavrsi.
+  Kretanje je LINEARNO, ne ubrzava u sredini: traka treba ravnomjerno prijeci
+  cijelo polje za SWEEP_DURATION sekundi. Nakon toga svjetla nema SWEEP_GAP
+  sekundi, pa ciklus krece ispocetka.
 */
-const SUN_SWEEP = 3;
-/** Koliko sunca nema izmedu dva prelaska. */
-const SUN_GAP = 15;
-const SUN_PERIOD = SUN_SWEEP + SUN_GAP;
-const SUN_DELAY = 0.4;
+const SWEEP_DURATION = 10;
+const SWEEP_GAP = 15;
+const SWEEP_PERIOD = SWEEP_DURATION + SWEEP_GAP;
+const SWEEP_DELAY = 0.4;
 
-/** Kutovi izmedu kojih je sunce ispred scene i odbljesak je vidljiv. */
-const SUN_ARC_START = -0.4;
-const SUN_ARC_END = Math.PI + 0.4;
+/** Traka ulazi izvan jednog ruba scene i izlazi izvan drugog. */
+const SWEEP_FROM = 7.6;
+const SWEEP_TO = -7.6;
+/** Sirina trake u jedinicama scene. */
+const SWEEP_WIDTH = 1.7;
 
-function easeInOutSine(t: number): number {
-  return -(Math.cos(Math.PI * t) - 1) / 2;
-}
+type SunState = {
+  /** Polozaj trake po osi X, u prostoru objekta. */
+  band: number;
+  /** 0 dok svjetla nema, do 1 na vrhuncu prelaska. */
+  strength: number;
+  light: { x: number; y: number; z: number };
+};
 
-/** Kut sunca za zadano proteklo vrijeme. */
-function sunAngle(elapsed: number): number {
-  const cycle = (elapsed - SUN_DELAY + SUN_PERIOD * 2) % SUN_PERIOD;
+const IDLE_SUN: SunState = {
+  band: 999,
+  strength: 0,
+  light: { x: 8, y: 6, z: -4 },
+};
 
-  if (cycle < SUN_SWEEP) {
-    // Brzi, vidljivi prelazak preko modula.
-    return SUN_ARC_START + (SUN_ARC_END - SUN_ARC_START) * easeInOutSine(cycle / SUN_SWEEP);
-  }
-
-  // Spori povratak iza scene do sljedeceg prelaska.
-  const rest = (cycle - SUN_SWEEP) / (SUN_PERIOD - SUN_SWEEP);
-  return SUN_ARC_END + (Math.PI * 2 + SUN_ARC_START - SUN_ARC_END) * rest;
-}
-
-/** Pokretno svjetlo koje stvara prelazak sunca preko staklene povrsine modula. */
 /**
- * Zeljeni polozaj sunca na ekranu tijekom prelaska.
+ * Stanje svjetla za zadano proteklo vrijeme.
  *
- * Sunce se NE postavlja u prostoru scene nego u prostoru kadra, pa se
- * unproject-om vraca u 3D. Razlog: pri prirodnom polozaju (visoko i ispred
- * scene) kolut zavrsi daleko izvan kadra — na mobitelu i po sedam puta sire od
- * ekrana — pa se vidio samo rub njegova sjaja. Ovako je zajamceno u kadru na
- * svakom omjeru, a vodoravno i dalje prati isti kut kao svjetlo koje stvara
- * odbljesak na modulima.
+ * Cista funkcija, pa je mogu neovisno pozvati i traka u shaderu i usmjereno
+ * svjetlo — bez prosljedivanja stanja kroz komponente.
  */
-const SUN_SCREEN_X = 0.8;
-const SUN_SCREEN_Y = 0.56;
-const SUN_DEPTH = 0.9;
-/** Velicina koluta u odnosu na udaljenost od kamere — prividna velicina ostaje ista. */
-const SUN_SIZE = 0.34;
+function sunState(elapsed: number): SunState {
+  const cycle = (elapsed - SWEEP_DELAY + SWEEP_PERIOD * 2) % SWEEP_PERIOD;
+  if (cycle >= SWEEP_DURATION) return IDLE_SUN;
 
-const sunNdc = new THREE.Vector3();
+  const p = cycle / SWEEP_DURATION;
+  /** Luk: svjetlo se podize i primice, pa se opet udaljava. */
+  const arc = Math.sin(p * Math.PI);
+  const band = SWEEP_FROM + (SWEEP_TO - SWEEP_FROM) * p;
+
+  return {
+    band,
+    // Meko uranjanje i izranjanje, bez naglog paljenja.
+    strength: Math.pow(arc, 0.55),
+    light: { x: band * 1.35, y: 5.4 + arc * 2.8, z: 1.5 + arc * 7.5 },
+  };
+}
 
 function SunSweep({ reduced, simplified }: { reduced: boolean; simplified: boolean }) {
   const lightRef = useRef<THREE.DirectionalLight>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
 
-  /** Mekani radijalni gradijent — sunce bez teksture s mreze. */
-  const glowTexture = useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    const size = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+  useFrame(() => {
+    const light = lightRef.current;
+    if (!light) return;
 
-    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    // Jasna jezgra pa tek onda halo — inace se vidi samo izmaglica.
-    gradient.addColorStop(0, 'rgba(255, 253, 244, 1)');
-    gradient.addColorStop(0.11, 'rgba(255, 246, 206, 0.96)');
-    gradient.addColorStop(0.17, 'rgba(255, 221, 128, 0.62)');
-    gradient.addColorStop(0.26, 'rgba(250, 198, 40, 0.26)');
-    gradient.addColorStop(0.45, 'rgba(245, 185, 0, 0.1)');
-    gradient.addColorStop(0.74, 'rgba(245, 185, 0, 0.03)');
-    gradient.addColorStop(1, 'rgba(245, 185, 0, 0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
+    const sun = reduced ? sunState(SWEEP_DELAY + SWEEP_DURATION * 0.5) : sunState(clockSeconds());
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  }, []);
-
-  useEffect(() => () => glowTexture?.dispose(), [glowTexture]);
-
-  useFrame((state) => {
-    const t = reduced ? Math.PI / 2 : sunAngle(clockSeconds());
-    /** 0 dok je sunce iza scene, 1 na vrhuncu prelaska. */
-    const front = Math.max(Math.sin(t), 0);
-
-    // Svjetlo ostaje u prostoru scene — ono stvara odbljesak na modulima.
-    if (lightRef.current) {
-      lightRef.current.position.set(Math.cos(t) * 10, 6 + Math.sin(t) * 1.6, Math.sin(t) * 6 + 3);
-      // Bez bloom-a na slabijim uredajima prelazak treba jace svjetlo.
-      lightRef.current.intensity = 1.2 + front * (simplified ? 4.6 : 3.4);
-    }
-
-    const glow = glowRef.current;
-    if (!glow) return;
-
-    if (front <= 0.001) {
-      glow.visible = false;
-      return;
-    }
-
-    glow.visible = true;
-
-    // Vodoravno prati kut sunca, okomito opisuje blagi luk pri vrhu kadra.
-    sunNdc.set(Math.cos(t) * SUN_SCREEN_X, SUN_SCREEN_Y + Math.sin(t) * 0.1, SUN_DEPTH);
-    sunNdc.unproject(state.camera);
-    glow.position.copy(sunNdc);
-    glow.lookAt(state.camera.position);
-
-    const distance = sunNdc.distanceTo(state.camera.position);
-    glow.scale.setScalar(distance * SUN_SIZE);
-
-    const material = glow.material as THREE.MeshBasicMaterial;
-    material.opacity = front * (simplified ? 1 : 0.85);
+    light.position.set(sun.light.x, sun.light.y, sun.light.z);
+    // Bez bloom-a na slabijim uredajima prelazak treba jace svjetlo.
+    light.intensity = 1.1 + sun.strength * (simplified ? 4.8 : 3.6);
   });
 
-  return (
-    <>
-      <directionalLight ref={lightRef} intensity={3.6} color="#FFE7AE" castShadow={false} />
-      {glowTexture ? (
-        <mesh ref={glowRef} renderOrder={-1} frustumCulled={false}>
-          <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial
-            map={glowTexture}
-            transparent
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            /* Bez ovoga bi magla scene progutala kolut na toj udaljenosti. */
-            fog={false}
-            toneMapped={false}
-          />
-        </mesh>
-      ) : null}
-    </>
-  );
+  return <directionalLight ref={lightRef} intensity={1.1} color="#FFE7AE" castShadow={false} />;
 }
 
 /**

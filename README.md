@@ -207,14 +207,31 @@ Svaka instanca kreće s malim kašnjenjem ovisnim o položaju, opisuje luk i
 zavrti se oko vlastite osi dok putuje. Preobrazba se tako prelijeva preko
 objekta umjesto da se sve pomakne odjednom.
 
-### Sunce
+### Sunčeve zrake
 
-Sunce se ne kreće jednoliko. Vidljivi dio putanje prijeđe za 3 s, a zatim 15 s
-putuje iza scene. Prvi prijelaz kreće 0,4 s nakon učitavanja i završava na 3,4 s.
-Sunčev kolut i odbljesak na modulima dijele isti smjer, pa putuju zajedno.
+Nema sunčevog koluta. Scenom putuje **traka svjetla**: prelazak preko cijelog
+polja traje 10 sekundi (`SWEEP_DURATION`), nakon čega svjetla nema idućih 15
+sekundi (`SWEEP_GAP`). Prvi prelazak kreće 0,4 s nakon učitavanja
+(`SWEEP_DELAY`), pa se vidi odmah na otvaranju stranice.
+
+Gibanje je linearno, tako da traka doista prijeđe **svih** modula u tih 10
+sekundi, a ne da uspori na rubovima. Usmjereno svjetlo (`SunSweep`) prati traku,
+pa se uz odsjaj mijenja i osvjetljenje cijele scene.
+
+Sam odsjaj računa se u shaderu iz položaja instance po osi X (`vSweepX`,
+uniformi `uSweep` / `uSweepWidth` / `uSweepStrength`) i razlikuje dvije vrste
+ploha:
+
+- **moduli** — svjetlo hvata cijelu plohu, ali se modulira teksturom ćelija, pa
+  po staklu titra umjesto da klizi kao ravna ploha;
+- **lak i metal** (karoserija, nosači) — uži odsjaj s jačom ovisnošću o kutu
+  plohe, pa vozilo i konstrukcija dobiju klizni bljesak, a ne ravnomjeran sjaj.
+
+Zato se prelazak vidi u sva tri svijeta: na modulima, na konstrukciji i na
+vozilu.
 
 Isti ritam ima i istaknuti dio naslova u herou (`.sun-text` u `globals.css`):
-prijelaz traje 3 s od 18 s ciklusa, s istim kašnjenjem od 0,4 s.
+prijelaz traje 10 s od 25 s ciklusa, s istim kašnjenjem od 0,4 s.
 
 ### Vrijeme, ne broj frameova
 
@@ -235,8 +252,10 @@ nije aktivna — animacije bi tada ostajale zaglavljene na početku.
   fade prijelazi.
 - **Bez WebGL-a ili uz gubitak konteksta** — statični SVG fallback
   (`three/SceneFallback.tsx`).
-- **Sunce** obiđe punu putanju svakih 15 sekundi (`SUN_PERIOD`), a početni kut je
-  namješten tako da odbljesak prijeđe preko modula već u prvim sekundama.
+- **Sunčeva traka** prelazi scenu 10 s, pa je nema 15 s (`SWEEP_DURATION` +
+  `SWEEP_GAP`). Uz `prefers-reduced-motion` traka stoji na sredini polja —
+  odsjaj je vidljiv, ali se ne miče. Na slabijim uređajima je nešto jača, jer
+  tamo nema bloom-a koji bi je inače pojačao.
 
 Kadar se prilagođava omjeru prikaza, pa scena ostaje u okviru i na uskim
 zaslonima.

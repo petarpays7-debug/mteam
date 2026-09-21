@@ -149,8 +149,8 @@
   /*
     Sunce koje prijede preko istaknutih rijeci u naslovu.
 
-    Ritam je namjerno isti kao kod sunca u 3D sceni: prijelaz traje 3 s
-    (16.7 % od 18 s ciklusa) i krece 0.4 s nakon ucitavanja, pa se dva pokreta
+    Ritam je namjerno isti kao kod svjetla u 3D sceni: prijelaz traje 10 s
+    (40 % od 25 s ciklusa) i krece 0.4 s nakon ucitavanja, pa se dva pokreta
     dogadaju istovremeno i djeluju kao jedna pojava.
 
     Uz `prefers-reduced-motion` tekst ostaje obicne zlatne boje.
@@ -176,7 +176,7 @@
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      animation: sun-text-sweep 18s cubic-bezier(0.45, 0, 0.2, 1) 0.4s infinite;
+      animation: sun-text-sweep 25s linear 0.4s infinite;
     }
   }
 
@@ -243,7 +243,7 @@
   0% {
     background-position: 130% 0;
   }
-  16.7% {
+  40% {
     background-position: -30% 0;
   }
   100% {
