@@ -165,7 +165,39 @@ Sve je proceduralno — nema vanjskih glTF modela ni HDR datoteka.
 | `three/panelTexture.ts`              | Proceduralna tekstura fotonaponskog modula (ćelije, sabirnice)        |
 | `three/layouts.ts`                   | Rasporedi 320 instanci za tri stanja hero scene                       |
 | `three/HeroScene.tsx`                | Hero: morph solarno polje → konstrukcija → vozilo                     |
-| `three/MountScene.tsx`               | MT Mount: „exploded view” nosivog sustava po kategoriji               |
+| `three/mountParts.ts`                | Geometrije i materijali konstrukcija (crijep, trapezni lim, profili)  |
+| `three/MountScene.tsx`               | MT Mount: nosivi sustav po tipu podloge                               |
+
+### Konstrukcije na `/mt-mount`
+
+Svaki od šest tipova ima **vlastitu podlogu i vlastiti način pričvršćenja**, jer
+se u stvarnosti razlikuju upravo po tome:
+
+| Tip           | Podloga                            | Pričvršćenje                            |
+| ------------- | ---------------------------------- | --------------------------------------- |
+| Kosi krov     | crijep, streha s olukom, sljeme    | krovne kuke ispod pokrova               |
+| Limeni krov   | trapezni lim, opšav, sljemenjak    | stezaljke koje obuhvaćaju rebro         |
+| Ravni krov    | hidroizolacija s preklopima, atika | balastni trokuti s betonskim utezima    |
+| Ground mount  | teren                              | zabijeni piloti i kosnice               |
+| Carport       | asfalt s oznakama, vozilo ispod    | stupovi, uzdužne grede i poprečnice     |
+| Solarna ograda| travnati pojas                     | stupovi u betonskim podnožjima          |
+
+Zajednički su samo moduli i montažni profili — u stvarnosti su to isti dijelovi.
+Modul je aluminijski okvir s uvučenim laminatom, a laminat nosi istu
+proceduralnu teksturu ćelija kao hero scena (`panelTexture.ts`), pripremljenu
+kao sRGB mapa boje.
+
+Mjere su otprilike u metrima (modul 1,08 × 0,68; crijep 0,30; stup 0,14), pa
+odnosi između modula, nosača i podloge ostaju stvarni. Kosina uvijek pada prema
+`+Z`, dakle prema kameri — bliži rub je niži. Kadar se mijenja s tipom, jer
+carport traži više visine od krova.
+
+`extrudeProfile()` izvlači 2D presjek duž osi Z i daje mu debljinu. Iz njega
+nastaju i crijep i trapezni lim; razlika je samo u profilu. Udvostručena točka
+u profilu lomi normalu, pa lim dobije oštra rebra, a crijep ostane obao.
+
+`Strut` postavlja gredu između dvije točke, pa kosnici i kosnice dobivaju nagib
+iz same geometrije umjesto iz ručno računatih kutova.
 
 ### Oblik vozila
 

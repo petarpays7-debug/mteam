@@ -115,3 +115,26 @@ export function getPanelTexture(): THREE.CanvasTexture | null {
   cached = texture;
   return texture;
 }
+
+let cachedColor: THREE.CanvasTexture | null = null;
+
+/**
+ * Ista tekstura, ali pripremljena kao obicna mapa boje (`map`).
+ *
+ * Hero je uzorkuje rucno u shaderu, pa joj tamo treba `NoColorSpace`. Kada se
+ * koristi kao `map` na standardnom materijalu, three ocekuje sRGB — inace
+ * modul ispadne ispran. Zato posebna kopija; platno se dijeli, ne crta dvaput.
+ */
+export function getPanelColorTexture(): THREE.CanvasTexture | null {
+  if (cachedColor) return cachedColor;
+
+  const base = getPanelTexture();
+  if (!base) return null;
+
+  const texture = base.clone();
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+
+  cachedColor = texture;
+  return texture;
+}

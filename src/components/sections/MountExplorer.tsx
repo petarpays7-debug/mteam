@@ -82,7 +82,13 @@ export function MountExplorer() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-12">
-      <div>
+      {/*
+        `min-w-0` je nuzan: stupac mreze inace ne smije biti uzi od svog
+        min-content sadrzaja, a `truncate` tekst u karticama ga u tom racunu
+        drzi u jednom retku. Bez toga stranica na mobitelu ide u vodoravni
+        pomak umjesto da se tekst skrati.
+      */}
+      <div className="min-w-0">
         <div
           role="tablist"
           aria-label="Tipovi solarnih konstrukcija"
@@ -141,7 +147,7 @@ export function MountExplorer() {
         </div>
       </div>
 
-      <div className="lg:sticky lg:top-28">
+      <div className="min-w-0 lg:sticky lg:top-28">
         <MountSceneFrame
           kind={category.slug as MountKind}
           className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/10 bg-petrol-900"
