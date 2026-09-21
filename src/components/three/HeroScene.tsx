@@ -495,14 +495,32 @@ function sunAngle(elapsed: number): number {
 }
 
 /** Pokretno svjetlo koje stvara prelazak sunca preko staklene povrsine modula. */
-function SunSweep({ reduced }: { reduced: boolean }) {
+/**
+ * Zeljeni polozaj sunca na ekranu tijekom prelaska.
+ *
+ * Sunce se NE postavlja u prostoru scene nego u prostoru kadra, pa se
+ * unproject-om vraca u 3D. Razlog: pri prirodnom polozaju (visoko i ispred
+ * scene) kolut zavrsi daleko izvan kadra — na mobitelu i po sedam puta sire od
+ * ekrana — pa se vidio samo rub njegova sjaja. Ovako je zajamceno u kadru na
+ * svakom omjeru, a vodoravno i dalje prati isti kut kao svjetlo koje stvara
+ * odbljesak na modulima.
+ */
+const SUN_SCREEN_X = 0.8;
+const SUN_SCREEN_Y = 0.56;
+const SUN_DEPTH = 0.9;
+/** Velicina koluta u odnosu na udaljenost od kamere — prividna velicina ostaje ista. */
+const SUN_SIZE = 0.34;
+
+const sunNdc = new THREE.Vector3();
+
+function SunSweep({ reduced, simplified }: { reduced: boolean; simplified: boolean }) {
   const lightRef = useRef<THREE.DirectionalLight>(null);
   const glowRef = useRef<THREE.Mesh>(null);
 
-  /** Mekani radijalni gradijent — sunce iza scene, bez teksture s mreze. */
+  /** Mekani radijalni gradijent — sunce bez teksture s mreze. */
   const glowTexture = useMemo(() => {
     if (typeof document === 'undefined') return null;
-    const size = 128;
+    const size = 256;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -510,9 +528,13 @@ function SunSweep({ reduced }: { reduced: boolean }) {
     if (!ctx) return null;
 
     const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, 'rgba(255, 232, 178, 0.55)');
-    gradient.addColorStop(0.18, 'rgba(245, 185, 0, 0.2)');
-    gradient.addColorStop(0.55, 'rgba(245, 185, 0, 0.05)');
+    // Jasna jezgra pa tek onda halo — inace se vidi samo izmaglica.
+    gradient.addColorStop(0, 'rgba(255, 253, 244, 1)');
+    gradient.addColorStop(0.11, 'rgba(255, 246, 206, 0.96)');
+    gradient.addColorStop(0.17, 'rgba(255, 221, 128, 0.62)');
+    gradient.addColorStop(0.26, 'rgba(250, 198, 40, 0.26)');
+    gradient.addColorStop(0.45, 'rgba(245, 185, 0, 0.1)');
+    gradient.addColorStop(0.74, 'rgba(245, 185, 0, 0.03)');
     gradient.addColorStop(1, 'rgba(245, 185, 0, 0)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
@@ -526,48 +548,53 @@ function SunSweep({ reduced }: { reduced: boolean }) {
 
   useFrame((state) => {
     const t = reduced ? Math.PI / 2 : sunAngle(clockSeconds());
-    const x = Math.cos(t) * 10;
-    const y = 6 + Math.sin(t) * 1.6;
-    const z = Math.sin(t) * 6 + 3;
+    /** 0 dok je sunce iza scene, 1 na vrhuncu prelaska. */
+    const front = Math.max(Math.sin(t), 0);
 
-    // Svjetlo je jace dok je ispred scene, pa je prelazak izrazeniji.
+    // Svjetlo ostaje u prostoru scene — ono stvara odbljesak na modulima.
     if (lightRef.current) {
-      lightRef.current.intensity = 1.2 + Math.max(Math.sin(t), 0) * 3.4;
+      lightRef.current.position.set(Math.cos(t) * 10, 6 + Math.sin(t) * 1.6, Math.sin(t) * 6 + 3);
+      // Bez bloom-a na slabijim uredajima prelazak treba jace svjetlo.
+      lightRef.current.intensity = 1.2 + front * (simplified ? 4.6 : 3.4);
     }
 
-    lightRef.current?.position.set(x, y, z);
+    const glow = glowRef.current;
+    if (!glow) return;
 
-    if (glowRef.current) {
-      /*
-        Sunčev kolut stoji na istom smjeru kao i svjetlo, samo dalje. Tako
-        vidljivo sunce i odbljesak na modulima putuju zajedno — inace se cini
-        da su to dvije nepovezane pojave.
-      */
-      glowRef.current.position.set(x * 1.35, y * 1.15, z * 1.35 - 6);
-      glowRef.current.lookAt(state.camera.position);
-      const material = glowRef.current.material as THREE.MeshBasicMaterial;
-      // Kolut se vidi samo dok je sunce ispred scene.
-      material.opacity = Math.max(Math.sin(t), 0) * 0.85;
+    if (front <= 0.001) {
+      glow.visible = false;
+      return;
     }
+
+    glow.visible = true;
+
+    // Vodoravno prati kut sunca, okomito opisuje blagi luk pri vrhu kadra.
+    sunNdc.set(Math.cos(t) * SUN_SCREEN_X, SUN_SCREEN_Y + Math.sin(t) * 0.1, SUN_DEPTH);
+    sunNdc.unproject(state.camera);
+    glow.position.copy(sunNdc);
+    glow.lookAt(state.camera.position);
+
+    const distance = sunNdc.distanceTo(state.camera.position);
+    glow.scale.setScalar(distance * SUN_SIZE);
+
+    const material = glow.material as THREE.MeshBasicMaterial;
+    material.opacity = front * (simplified ? 1 : 0.85);
   });
 
   return (
     <>
-      <directionalLight
-        ref={lightRef}
-        intensity={3.6}
-        color="#FFE7AE"
-        castShadow={false}
-      />
+      <directionalLight ref={lightRef} intensity={3.6} color="#FFE7AE" castShadow={false} />
       {glowTexture ? (
-        <mesh ref={glowRef} renderOrder={-1}>
-          <planeGeometry args={[13, 13]} />
+        <mesh ref={glowRef} renderOrder={-1} frustumCulled={false}>
+          <planeGeometry args={[1, 1]} />
           <meshBasicMaterial
             map={glowTexture}
             transparent
-            opacity={0.75}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
+            /* Bez ovoga bi magla scene progutala kolut na toj udaljenosti. */
+            fog={false}
+            toneMapped={false}
           />
         </mesh>
       ) : null}
@@ -662,7 +689,7 @@ export default function HeroScene({
         polje modula ostane tamno izmedu dva prelaska.
       */}
       <directionalLight position={[3.5, 6.5, 9]} intensity={3.4} color="#DCE8F0" />
-      <SunSweep reduced={reduced} />
+      <SunSweep reduced={reduced} simplified={simplified} />
       {/* Hladno rubno svjetlo s lijeva — odvaja module od pozadine. */}
       <pointLight position={[-9, 3.5, 5]} intensity={55} color="#5F8499" distance={28} />
       <pointLight position={[9, 1.5, -7]} intensity={9} color="#FF8A4C" distance={20} />
