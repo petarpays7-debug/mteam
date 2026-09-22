@@ -3,6 +3,7 @@ import { company, currentYear, formattedAddress } from '@/content/company';
 import { legalNav, mainNav } from '@/content/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { Logo } from './Logo';
+import { StudioCredit } from './StudioCredit';
 
 export function Footer() {
   return (
@@ -90,6 +91,10 @@ export function Footer() {
               </li>
             ))}
           </ul>
+        </div>
+
+        <div className="mt-12 flex justify-center">
+          <StudioCredit />
         </div>
       </div>
     </footer>

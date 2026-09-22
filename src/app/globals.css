@@ -262,3 +262,108 @@
     background-position: -30% 0;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Potpis studija — udar groma                                                */
+/* -------------------------------------------------------------------------- */
+
+/*
+  Munja se povuce odozgo, dvaput bljesne i ugasi se. Opadanje je namjerno
+  sporije od paljenja — tako bljesak izgleda kao svjetlo koje gasne, a ne kao
+  pulsiranje.
+
+  Tocno DVA bljeska unutar sekunde, na sicusnoj povrsini: WCAG 2.3.1 dopusta
+  najvise tri bljeska u sekundi. Ne dodavati bljeskove bez te provjere.
+*/
+@keyframes bolt-strike {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-0.55rem) scaleY(0.5);
+  }
+  5% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scaleY(1);
+  }
+  17% {
+    opacity: 0.1;
+  }
+  27% {
+    opacity: 1;
+  }
+  46% {
+    opacity: 0.06;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0) scaleY(1);
+  }
+}
+
+@keyframes bolt-glow {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  17% {
+    opacity: 0.08;
+  }
+  27% {
+    opacity: 0.8;
+  }
+  62% {
+    opacity: 0;
+  }
+}
+
+/* Natpis nakratko pobijeli, kao osvijetljen bljeskom. */
+@keyframes bolt-word {
+  0%,
+  100% {
+    text-shadow: none;
+  }
+  5%,
+  27% {
+    color: #fff8e3;
+    text-shadow: 0 0 0.8rem rgba(255, 214, 92, 0.7);
+  }
+  17%,
+  55% {
+    text-shadow: none;
+  }
+}
+
+/*
+  `:active` je zbog dodira — na mobitelu nema prelaska misem, pa grom udari
+  kad se potpis dodirne.
+*/
+.studio-credit:hover .bolt,
+.studio-credit:active .bolt {
+  animation: bolt-strike 0.95s linear 1;
+  filter: drop-shadow(0 0 0.4rem rgba(255, 214, 92, 0.75));
+}
+
+.studio-credit:hover .bolt-glow,
+.studio-credit:active .bolt-glow {
+  animation: bolt-glow 0.95s linear 1;
+  background: radial-gradient(60% 120% at 50% 0%, rgba(255, 214, 92, 0.28), transparent 70%);
+}
+
+.studio-credit:hover .bolt-word,
+.studio-credit:active .bolt-word {
+  animation: bolt-word 0.95s linear 1;
+}
+
+/* Grom je ukras, ne informacija — uz smanjenu animaciju ostaje samo boja. */
+@media (prefers-reduced-motion: reduce) {
+  .studio-credit:hover .bolt,
+  .studio-credit:hover .bolt-glow,
+  .studio-credit:hover .bolt-word,
+  .studio-credit:active .bolt,
+  .studio-credit:active .bolt-glow,
+  .studio-credit:active .bolt-word {
+    animation: none;
+  }
+}
