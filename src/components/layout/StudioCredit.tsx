@@ -1,13 +1,16 @@
 /**
  * Potpis studija u podnožju.
  *
- * Na prelazak mišem udari grom: munja se povuče odozgo, dvaput bljesne i
- * ugasi se, a natpis u tom trenutku zasvijetli. Efekt je čisti CSS — nema
- * stanja ni JavaScripta, pa radi i prije hidracije.
+ * Na prelazak mišem kroz sama slova „OLUJA" proleti bljesak — svjetlo je
+ * ograničeno na oblik slova (`background-clip: text`, ista tehnika kao sun
+ * sweep u herou), pa izgleda kao da slova gore iznutra, a ne kao da je preko
+ * njih položen sjaj.
  *
- * Bljeskovi su namjerno ograničeni na dva unutar sekunde i na sićušnu
- * površinu: WCAG 2.3.1 dopušta najviše tri bljeska u sekundi. Uz
- * `prefers-reduced-motion` munje nema uopće, ostaje samo promjena boje.
+ * Efekt je čisti CSS: nema stanja ni JavaScripta, pa radi i prije hidracije.
+ *
+ * Bljeska je namjerno točno dva unutar sekunde i na sićušnoj površini —
+ * WCAG 2.3.1 dopušta najviše tri u sekundi. Uz `prefers-reduced-motion`
+ * bljeska nema, ostaje samo promjena boje.
  */
 
 /**
@@ -16,24 +19,7 @@
  */
 const STUDIO_URL = '';
 
-function Bolt() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 20 40"
-      className="bolt pointer-events-none absolute -top-[2.15rem] left-1/2 h-9 w-[1.125rem] -translate-x-1/2 opacity-0"
-    >
-      <defs>
-        <linearGradient id="oluja-bolt" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFF4D2" />
-          <stop offset="45%" stopColor="#FFD65C" />
-          <stop offset="100%" stopColor="#F5B900" />
-        </linearGradient>
-      </defs>
-      <path d="M12.5 0 L4 22 L9.5 22 L7 40 L16 17 L10.5 17 Z" fill="url(#oluja-bolt)" />
-    </svg>
-  );
-}
+const WORDMARK = 'Oluja';
 
 export function StudioCredit() {
   const content = (
@@ -42,12 +28,19 @@ export function StudioCredit() {
         Designed &amp; developed by
       </span>
 
-      <span className="relative mt-2 inline-block">
-        {/* Odsjaj iza natpisa — ono što ostane kad munja prođe. */}
-        <span aria-hidden className="bolt-glow pointer-events-none absolute -inset-x-6 -inset-y-4 opacity-0" />
-        <Bolt />
-        <span className="bolt-word relative font-display text-[0.95rem] font-semibold uppercase tracking-[0.42em] text-paper/45 transition-colors duration-500 group-hover:text-paper">
-          Oluja
+      <span className="relative mt-2.5 inline-block font-display text-[1.32rem] font-bold uppercase leading-none tracking-[0.3em] text-paper/35 transition-colors duration-500 group-hover:text-paper/55">
+        {/* Svjetlo koje izbije izvan slova — ostatak udara, ne sam udar. */}
+        <span aria-hidden className="storm-halo pointer-events-none absolute -inset-x-10 -inset-y-8 opacity-0" />
+
+        <span className="relative">{WORDMARK}</span>
+
+        {/*
+          Isti tekst preko osnovnog, ali obojen gradijentom kroz masku slova.
+          Mora ostati znak za znak jednak gornjem — inače bljesak ne sjedne
+          na slova.
+        */}
+        <span aria-hidden className="storm-flash absolute inset-0">
+          {WORDMARK}
         </span>
       </span>
     </>
@@ -55,7 +48,7 @@ export function StudioCredit() {
 
   /* `studio-credit` nosi animaciju (vidi globals.css), `group` boje iz Tailwinda. */
   const className =
-    'studio-credit group relative inline-flex flex-col items-center rounded-lg px-3 pb-1 pt-9 text-center';
+    'studio-credit group relative inline-flex select-none flex-col items-center rounded-lg px-4 py-3 text-center';
 
   if (STUDIO_URL) {
     return (
